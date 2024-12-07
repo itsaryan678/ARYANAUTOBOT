@@ -103,7 +103,6 @@
                      const {
                          name,
                          thumbSrc,
-                         profileUrl,
                          time,
                      } = user;
                      const userCard = document.createElement('div');
@@ -116,13 +115,10 @@
                      userInfo.className = 'user-info';
                      const userName = document.createElement('h4');
                      userName.textContent = name;
-                     const profileLink = document.createElement('p');
-                     profileLink.innerHTML = `${profileUrl}`;
                      const uptimeUser = document.createElement('p');
                      uptimeUser.className = 'uptime-user';
                      uptimeUser.innerHTML = `Uptime: ${timeFormat(time)}`;
                      userInfo.appendChild(userName);
-                     userInfo.appendChild(profileLink);
                      userInfo.appendChild(uptimeUser);
                      userCard.appendChild(image);
                      userCard.appendChild(userInfo);

@@ -7,6 +7,17 @@ const bold = {
   'R': "𝗥", 'S': "𝗦", 'T': "𝗧", 'U': "𝗨", 'V': "𝗩", 'W': "𝗪", 'X': "𝗫", 'Y': "𝗬", 'Z': "𝗭", '1': "𝟭", '2': "𝟮", '3': "𝟯", '4': "𝟰", '5': "𝟱", '6': "𝟲", '7': "𝟳", '8': "𝟴", '9': "𝟵",
 };
 
+const sans = {
+  a: "𝖺", b: "𝖻", c: "𝖼", d: "𝖽", e: "𝖾", f: "𝖿", g: "𝗀", h: "𝗁",
+  i: "𝗂", j: "𝗃", k: "𝗄", l: "𝗅", m: "𝗆", n: "𝗇", o: "𝗈", p: "𝗉",
+  q: "𝗊", r: "𝗋", s: "𝗌", t: "𝗍", u: "𝗎", v: "𝗏", w: "𝗐", x: "𝗑",
+  y: "𝗒", z: "𝗓", A: "𝖠", B: "𝖡", C: "𝖢", D: "𝖣", E: "𝖤", F: "𝖥",
+  G: "𝖦", H: "𝖧", I: "𝖨", J: "𝖩", K: "𝖪", L: "𝖫", M: "𝖬", N: "𝖭",
+  O: "𝖮", P: "𝖯", Q: "𝖰", R: "𝖱", S: "𝖲", T: "𝖳", U: "𝖴", V: "𝖵",
+  W: "𝖶", X: "𝖷", Y: "𝖸", Z: "𝖹", "0": "𝟢", "1": "𝟣", "2": "𝟤", "3": "𝟥",
+  "4": "𝟦", "5": "𝟧", "6": "𝟨", "7": "𝟩", "8": "𝟪", "9": "𝟫",
+};
+
 module.exports.config = {
   name: 'help',
   version: '1.0.0',
@@ -18,13 +29,7 @@ module.exports.config = {
   credits: 'Develeoper',
 };
 
-module.exports.run = async function({
-  api,
-  event,
-  enableCommands,
-  args,
-  Utils
-}) {
+module.exports.run = async function({ api, event, enableCommands, args, Utils }) {
   const input = args.join(' ');
   try {
     const eventCommands = enableCommands[1].handleEvent;
@@ -34,13 +39,13 @@ module.exports.run = async function({
       let page = 1;
       let start = (page - 1) * pages;
       let end = start + pages;
-      let helpMessage = `📚| 𝗖𝗢𝗠𝗠𝗔𝗡𝗗 𝗟𝗜𝗦𝗧\n\n`;
+      let helpMessage = `📚| ${sans["C"]}𝗢𝗠𝗠𝗔𝗡𝗗 𝗟𝗜𝗦𝗧\n\n`;
       for (let i = start; i < Math.min(end, commands.length); i++) {
-        helpMessage += `\t➜ ${bold[commands[i].toLowerCase()]} : ${bold[commands[i].description]}\n`;
+        helpMessage += `\t➜ ${bold[commands[i].toLowerCase()]} : ${sans[commands[i].description]}\n`;
       }
       helpMessage += '\nEvent List:\n\n';
-      eventCommands.forEach((eventCommand, index) => {
-        helpMessage += `\t➜ ${bold[eventCommand.toLowerCase()]} : ${bold[eventCommand.description]}\n`;
+      eventCommands.forEach((eventCommand) => {
+        helpMessage += `\t➜ ${bold[eventCommand.toLowerCase()]} : ${sans[eventCommand.description]}\n`;
       });
       helpMessage += `\nPage ${page}/${Math.ceil(commands.length / pages)}. To view the next page, type 'help page number'. To view information about a specific command, type 'help command name'.`;
       api.sendMessage(helpMessage, event.threadID, event.messageID);
@@ -49,35 +54,25 @@ module.exports.run = async function({
       const pages = 20;
       let start = (page - 1) * pages;
       let end = start + pages;
-      let helpMessage = `📚| 𝗖𝗢𝗠𝗠𝗔𝗡𝗗 𝗟𝗜𝗦𝗧\n\n`;
+      let helpMessage = `📚| ${sans["C"]}𝗢𝗠𝗠𝗔𝗡𝗗 𝗟𝗜𝗦𝗧\n\n`;
       for (let i = start; i < Math.min(end, commands.length); i++) {
-        helpMessage += `\t➜ ${bold[commands[i].toLowerCase()]} : ${bold[commands[i].description]}\n`;
+        helpMessage += `\t➜ ${bold[commands[i].toLowerCase()]} : ${sans[commands[i].description]}\n`;
       }
       helpMessage += '\nEvent List:\n\n';
-      eventCommands.forEach((eventCommand, index) => {
-        helpMessage += `\t➜ ${bold[eventCommand.toLowerCase()]} : ${bold[eventCommand.description]}\n`;
+      eventCommands.forEach((eventCommand) => {
+        helpMessage += `\t➜ ${bold[eventCommand.toLowerCase()]} : ${sans[eventCommand.description]}\n`;
       });
       helpMessage += `\nPage ${page} of ${Math.ceil(commands.length / pages)}`;
       api.sendMessage(helpMessage, event.threadID, event.messageID);
     } else {
       const command = [...Utils.handleEvent, ...Utils.commands].find(([key]) => key.includes(input?.toLowerCase()))?.[1];
       if (command) {
-        const {
-          name,
-          version,
-          role,
-          aliases = [],
-          description,
-          usage,
-          credits,
-          cooldown,
-          hasPrefix
-        } = command;
+        const { name, version, role, aliases = [], description, usage, credits, cooldown, hasPrefix } = command;
         const roleMessage = role !== undefined ? (role === 0 ? '➛ Permission: user' : (role === 1 ? '➛ Permission: admin' : (role === 2 ? '➛ Permission: thread Admin' : (role === 3 ? '➛ Permission: super Admin' : '')))) : '';
         const aliasesMessage = aliases.length ? `🔎 Aliases: ${aliases.map(alias => bold[alias.toLowerCase()]).join(', ')}\n` : '';
-        const descriptionMessage = description ? `Description: ${bold[description]}\n` : '';
-        const usageMessage = usage ? `📚 Usage: ${bold[usage]}\n` : '';
-        const creditsMessage = credits ? `🏷️ Credits: ${bold[credits]}\n` : '';
+        const descriptionMessage = description ? `Description: ${sans[description]}\n` : '';
+        const usageMessage = usage ? `📚 Usage: ${sans[usage]}\n` : '';
+        const creditsMessage = credits ? `🏷️ Credits: ${sans[credits]}\n` : '';
         const versionMessage = version ? `📦 Version: ${version}\n` : '';
         const cooldownMessage = cooldown ? `⏰ Cooldown: ${cooldown} second(s)\n` : '';
         const message = `${bold[name]}\n\n${versionMessage}${roleMessage}\n${aliasesMessage}${descriptionMessage}${usageMessage}${creditsMessage}${cooldownMessage}`;

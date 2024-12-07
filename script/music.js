@@ -22,8 +22,6 @@ module.exports.run = async function({ api, event, args }) {
       return api.sendMessage("Please provide a song name.", event.threadID, event.messageID);
     }
 
-    await api.sendMessage('⏳', event.messageID);
-
     let searchResults = await yts(query);
     if (searchResults.videos.length === 0) {
       return api.sendMessage("No songs found for your query.", event.threadID, event.messageID);
@@ -63,9 +61,21 @@ module.exports.run = async function({ api, event, args }) {
       api.sendMessage("Failed to save the audio file.", event.threadID, event.messageID);
     });
 
-    await api.sendMessage('✅', event.messageID);
   } catch (error) {
-    console.error("Error:", error);
-    api.sendMessage("An error occurred while processing your request. Please try again.", event.threadID, event.messageID);
+    console.error("Error processing request:", error);
+    let errorMessage = "An error occurred while processing your request. Please try again.";
+    
+    if (error.response) {
+      // Server responded with a status code other than 2xx
+      errorMessage += ` Server responded with status code ${error.response.status}.`;
+    } else if (error.request) {
+      // Request was made but no response was received
+      errorMessage += " No response received from the server.";
+    } else {
+      // Other errors (e.g., network issues, invalid URL)
+      errorMessage += ` Error: ${error.message}`;
+    }
+
+    api.sendMessage(errorMessage, event.threadID, event.messageID);
   }
 };

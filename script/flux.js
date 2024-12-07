@@ -6,7 +6,7 @@ module.exports.config = {
   name: "flux",
   version: "1.0.0",
   role: 0,
-  hasPrefix: false,
+  hasPrefix: true,
   usage: 'flux [prompt]',
   description: 'Flux Dev',
   credits: 'Aryan Chauhan',

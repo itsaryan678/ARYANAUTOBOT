@@ -6,7 +6,7 @@ module.exports.config = {
   name: "animagen",
   version: "1.0.0",
   role: 0,
-  hasPrefix: false,
+  hasPrefix: true,
   usage: 'animagen [prompt]',
   description: 'Generate an image based on a text prompt',
   credits: 'Aryan Chauhan',

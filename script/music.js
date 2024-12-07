@@ -1,96 +1,101 @@
 const path = require('path');
-const fs = require('fs');
+const fs = require('fs-extra');
 const axios = require('axios');
 const yts = require('yt-search');
 
-module.exports.config = {
-  name: "music",
-  version: "1.0.0",
-  role: 0,
-  hasPrefix: true,
-  aliases: ['play'],
-  usage: 'music [prompt]',
-  description: 'Search music on YouTube',
-  credits: 'Developer',
-  cooldown: 5
-};
+const tmpDir = path.join(__dirname, 'tmp');
+if (!fs.existsSync(tmpDir)) {
+    fs.mkdirSync(tmpDir);
+}
 
-module.exports.run = async function({ api, event, args }) {
-  const musicName = args.join(' ');
-  if (!musicName) {
-    api.sendMessage(
-      'To get started, type "music" followed by the title of the song you want.',
-      event.threadID,
-      event.messageID
-    );
-    return;
-  }
-
-  try {
-    api.sendMessage(`Searching for "${musicName}"...`, event.threadID, event.messageID);
-    const searchResults = await yts(musicName);
-
-    if (!searchResults.videos.length) {
-      return api.sendMessage("No results found for your search.", event.threadID, event.messageID);
-    }
-
-    const music = searchResults.videos[0];
-    const musicUrl = music.url;
-
-    const cacheDir = path.join(__dirname, 'cache');
-    if (!fs.existsSync(cacheDir)) fs.mkdirSync(cacheDir);
-
-    const fileName = `${Date.now()}_${Math.random().toString(36).substr(2, 5)}_music.mp3`;
-    const filePath = path.join(cacheDir, fileName);
-
-    api.sendMessage(`Downloading "${music.title}"...`, event.threadID, event.messageID);
-
-    // API call to get download link
-    const downloadResponse = await axios.get(`https://aryanchauhanapi.onrender.com/youtube/audio?url=${musicUrl}`);
-    const downloadLink = downloadResponse.data?.result?.link;
-    const title = downloadResponse.data?.result?.title;
-
-    if (!downloadLink) {
-      return api.sendMessage("Unable to retrieve the download link.", event.threadID, event.messageID);
-    }
-
-    console.log(`Download Link: ${downloadLink}`);
-
-    // File download with User-Agent header
-    const fileResponse = await axios({
-      url: downloadLink,
-      method: 'GET',
-      responseType: 'stream',
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
-      }
-    });
-
+async function downloadFile(url, filePath) {
     const writer = fs.createWriteStream(filePath);
-    fileResponse.data.pipe(writer);
-
-    writer.on('finish', () => {
-      if (fs.statSync(filePath).size > 26214400) { // 25MB limit
-        fs.unlinkSync(filePath);
-        return api.sendMessage('The file size exceeds 25MB and cannot be sent.', event.threadID, event.messageID);
-      }
-
-      const message = {
-        body: `${title}\nFile downloaded successfully.`,
-        attachment: fs.createReadStream(filePath)
-      };
-
-      api.sendMessage(message, event.threadID, () => {
-        fs.unlinkSync(filePath);
-      }, event.messageID);
+    const response = await axios({
+        url,
+        method: 'GET',
+        responseType: 'stream',
+        headers: {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+        }
     });
-
-    writer.on('error', (err) => {
-      if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
-      api.sendMessage(`An error occurred while saving the file: ${err.message}`, event.threadID, event.messageID);
+    response.data.pipe(writer);
+    return new Promise((resolve, reject) => {
+        writer.on('finish', resolve);
+        writer.on('error', reject);
     });
-  } catch (error) {
-    console.error("Error:", error.message);
-    api.sendMessage(`An unexpected error occurred: ${error.message}`, event.threadID, event.messageID);
-  }
+}
+
+module.exports = {
+    config: {
+        name: "sing",
+        version: "2.0.0",
+        role: 0,
+        hasPrefix: true,
+        aliases: ['play', 'music'],
+        usage: '{pn} <search query>',
+        description: 'Search and download music from YouTube',
+        credits: 'Team Clayx | Developer',
+        cooldown: 5
+    },
+
+    onStart: async function({ api, message, event, args }) {
+        const query = args.join(' ');
+
+        if (!query) {
+            return message.reply("❌ | Please provide a search query!\nUsage: {pn} <search query>");
+        }
+
+        let loadingMessageId;
+
+        try {
+            const loadingMessage = await message.reply(`🎧 Searching for "${query}"...`);
+            loadingMessageId = loadingMessage.messageID;
+
+            const searchResults = await yts(query);
+
+            if (!searchResults.videos.length) {
+                return message.reply("❌ | No videos found for the given query.");
+            }
+
+            const topVideo = searchResults.videos[0];
+            const videoURL = topVideo.url;
+
+            const downloadBaseURL = "https://ytb-team-calyx-pxdf.onrender.com";
+            const downloadURL = `${downloadBaseURL}/download?url=${encodeURIComponent(videoURL)}&type=mp3`;
+
+            const { data: downloadData } = await axios.get(downloadURL);
+
+            if (!downloadData.download_url) {
+                throw new Error("❌ | Error getting download URL from external service.");
+            }
+
+            const fileName = downloadData.download_url.split("/").pop();
+            const filePath = path.join(tmpDir, fileName);
+
+            const fileDownloadURL = `${downloadBaseURL}/${downloadData.download_url}`;
+
+            await downloadFile(fileDownloadURL, filePath);
+
+            if (loadingMessageId) {
+                await message.unsend(loadingMessageId);
+            }
+
+            message.reply({
+                body: `🎵 ${topVideo.title}\nDuration: ${topVideo.timestamp}`,
+                attachment: fs.createReadStream(filePath),
+            }, () => {
+                if (fs.existsSync(filePath)) {
+                    fs.unlinkSync(filePath);
+                }
+            });
+        } catch (error) {
+            console.error("Error:", error.message);
+
+            if (loadingMessageId) {
+                await message.unsend(loadingMessageId);
+            }
+
+            return message.reply(`❌ | An unexpected error occurred: ${error.message}`);
+        }
+    }
 };

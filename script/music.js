@@ -72,10 +72,6 @@ module.exports = {
 
             await downloadFile(fileDownloadURL, filePath);
 
-            if (loadingMessageId) {
-                await api.unsendMessage(loadingMessageId, event.threadID);
-            }
-
             api.sendMessage({
                 body: `🎵 ${topVideo.title}\nDuration: ${topVideo.timestamp}`,
                 attachment: fs.createReadStream(filePath),
@@ -86,10 +82,6 @@ module.exports = {
             });
         } catch (error) {
             console.error("Error:", error.message);
-
-            if (loadingMessageId) {
-                await api.unsendMessage(loadingMessageId, event.threadID);
-            }
 
             return api.sendMessage(`❌ | An unexpected error occurred: ${error.message}`, event.threadID);
         }

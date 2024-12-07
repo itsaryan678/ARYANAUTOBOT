@@ -140,7 +140,6 @@ module.exports.config = {
   version: '1.0.0',
   role: 0,
   hasPrefix: true,
-  aliases: ['info'],
   description: "Beginner's guide",
   usage: "Help [page] or [command]",
   credits: 'Aryan Chauhan',
@@ -168,7 +167,7 @@ module.exports.run = async function ({ api, event, args, fonts, prefix }) {
       }
       helpMessage += apply(`\n`, sans);
       helpMessage += apply(`│ 𝖬𝖺𝖽𝖾 𝗐𝗂𝗍𝗁 💜 𝖻𝗒 𝖠𝗋𝗒𝖺𝗇\n`, sans);
-      helpMessage += apply(`╰───────────────⟡\n`, sans);
+      helpMessage += apply(`╰─────────────⟡\n`, sans);
       api.sendMessage({
         body: helpMessage,
       }, event.threadID, event.messageID);
@@ -196,7 +195,7 @@ module.exports.run = async function ({ api, event, args, fonts, prefix }) {
         helpMessage += apply(`│ 📝 GUIDE\n`, bold);
         helpMessage += `│    ${usage ? usage : "No guide available"}\n`;
 
-        helpMessage += `╰────────•\n`;
+        helpMessage += `╰─────────•\n`;
         api.sendMessage(helpMessage, event.threadID, event.messageID);
       } else {
         api.sendMessage(`⛔ 𝗡𝗼 𝗗𝗮𝘁𝗮\n━━━━━━━━━━\n\nCommand not found. Use ${prefix}help to see available commands`,

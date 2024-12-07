@@ -34,23 +34,23 @@ module.exports = {
         credits: 'Team Clayx | Developer',
         cooldown: 5
     },
-    run: async function({ api, event, args }) {
+    run: async function({ api, event, args }) {  // Ensure 'message' is removed if using 'api.sendMessage'
         const query = args.join(' ');
 
         if (!query) {
-            return message.reply("❌ | Please provide a search query!\nUsage: {pn} <search query>");
+            return api.sendMessage("❌ | Please provide a search query!\nUsage: {pn} <search query>", event.threadID);
         }
 
         let loadingMessageId;
 
         try {
-            const loadingMessage = await message.reply(`🎧 Searching for "${query}"...`);
+            const loadingMessage = await api.sendMessage(`🎧 Searching for "${query}"...`, event.threadID);
             loadingMessageId = loadingMessage.messageID;
 
             const searchResults = await yts(query);
 
             if (!searchResults.videos.length) {
-                return message.reply("❌ | No videos found for the given query.");
+                return api.sendMessage("❌ | No videos found for the given query.", event.threadID);
             }
 
             const topVideo = searchResults.videos[0];
@@ -73,13 +73,13 @@ module.exports = {
             await downloadFile(fileDownloadURL, filePath);
 
             if (loadingMessageId) {
-                await message.unsend(loadingMessageId);
+                await api.unsendMessage(loadingMessageId, event.threadID);
             }
 
-            message.reply({
+            api.sendMessage({
                 body: `🎵 ${topVideo.title}\nDuration: ${topVideo.timestamp}`,
                 attachment: fs.createReadStream(filePath),
-            }, () => {
+            }, event.threadID, () => {
                 if (fs.existsSync(filePath)) {
                     fs.unlinkSync(filePath);
                 }
@@ -88,10 +88,10 @@ module.exports = {
             console.error("Error:", error.message);
 
             if (loadingMessageId) {
-                await message.unsend(loadingMessageId);
+                await api.unsendMessage(loadingMessageId, event.threadID);
             }
 
-            return message.reply(`❌ | An unexpected error occurred: ${error.message}`);
+            return api.sendMessage(`❌ | An unexpected error occurred: ${error.message}`, event.threadID);
         }
     }
 };

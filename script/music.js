@@ -15,21 +15,17 @@ module.exports.config = {
   cooldown: 5
 };
 
-module.exports.run = async function({
-  api,
-  event,
-  args
-}) {
+module.exports.run = async function({ api, event, args }) {
   const query = args.join(" ");
   if (!query) {
-    return message.reply("Please provide a song name.");
+    return api.sendMessage("Please provide a song name.", event.threadID, event.messageID);
   }
 
-  message.react('⏳');
+  await api.sendMessage('⏳', event.messageID);
 
   let searchResults = await yts(query);
   if (searchResults.videos.length === 0) {
-    return message.reply("No songs found for your query.");
+    return api.sendMessage("No songs found for your query.", event.threadID, event.messageID);
   }
 
   const videoUrl = searchResults.videos[0].url;
@@ -54,7 +50,7 @@ module.exports.run = async function({
     response.data.pipe(writeStream);
 
     writeStream.on('finish', () => {
-      message.reply({
+      api.sendMessage({
         body: sanitizedTitle,
         attachment: fs.createReadStream(filePath)
       }, event.threadID, () => {
@@ -64,13 +60,13 @@ module.exports.run = async function({
 
     writeStream.on('error', (error) => {
       console.error("Error writing file:", error);
-      message.reply("Failed to save the audio file.");
+      api.sendMessage("Failed to save the audio file.", event.threadID, event.messageID);
     });
 
-    await message.react('✅');
+    await api.sendMessage('✅', event.messageID);
   } catch (error) {
     console.error("Error downloading or sending audio:", error);
-    message.react('❌');
-    message.reply("An error occurred while processing your request. Please try again.");
+    api.sendMessage('❌', event.messageID);
+    api.sendMessage("An error occurred while processing your request. Please try again.", event.threadID, event.messageID);
   }
 };

@@ -35,16 +35,9 @@ module.exports.run = async function({ api, event, args }) {
       throw new Error(`Request failed with status code ${res.status}`);
     }
 
-    const music = res.data.result.link;
+    const { link, title } = res.data.result;
 
-    const response = await axios({
-      method: 'GET',
-      url: music,
-      responseType: 'stream'
-    });
-
-    let title = res.data.result.title || "song";
-    const sanitizedTitle = title.replace(/[^a-zA-Z0-9_.-]/g, '_').replace(/_+/g, '_').replace(/^_+|_+$/g, '');
+    let sanitizedTitle = title.replace(/[^a-zA-Z0-9_.-]/g, '_').replace(/_+/g, '_').replace(/^_+|_+$/g, '');
     const fileName = `${sanitizedTitle}.mp3`;
     const filePath = path.join(__dirname, "cache", fileName);
 
@@ -52,6 +45,12 @@ module.exports.run = async function({ api, event, args }) {
     if (!fs.existsSync(path.join(__dirname, "cache"))) {
       fs.mkdirSync(path.join(__dirname, "cache"));
     }
+
+    const response = await axios({
+      method: 'GET',
+      url: link,
+      responseType: 'stream'
+    });
 
     const writeStream = fs.createWriteStream(filePath);
     response.data.pipe(writeStream);
@@ -81,9 +80,6 @@ module.exports.run = async function({ api, event, args }) {
     } else if (error.request) {
       // Request was made but no response was received
       errorMessage += " No response received from the server.";
-    } else if (error.message.includes('404')) {
-      // Specific 404 error message
-      errorMessage = "The requested resource was not found (404).";
     } else {
       // Other errors
       errorMessage += ` Error: ${error.message}`;

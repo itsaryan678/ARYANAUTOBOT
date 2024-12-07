@@ -1,94 +1,85 @@
 const path = require('path');
-const axios = require('axios');
-const fs = require('fs-extra');
-const yts = require('yt-search');
-
 module.exports.config = {
-  name: "sing",
+  name: "music",
   version: "1.0.0",
   role: 0,
   hasPrefix: true,
   aliases: ['play'],
   usage: 'Music [prompt]',
   description: 'Search music on YouTube',
-  credits: 'Aryan Chauhan',
+  credits: 'Developer',
   cooldown: 5
 };
-
 module.exports.run = async function({ api, event, args }) {
+  const fs = require("fs-extra");
+  const axios = require("axios");
+  const yts = require("yt-search");
+
+  const musicName = args.join(' ');
+  if (!musicName) {
+    api.sendMessage('To get started, type "music" followed by the title of the song you want.', event.threadID, event.messageID);
+    return;
+  }
+
   try {
-    const query = args.join(" ");
-    if (!query) {
-      return api.sendMessage("Please provide a song name.", event.threadID, event.messageID);
+    api.sendMessage(`Searching for "${musicName}"...`, event.threadID, event.messageID);
+    const searchResults = await yts(musicName);
+
+    if (!searchResults.videos.length) {
+      return api.sendMessage("No results found for your search.", event.threadID, event.messageID);
     }
 
-    let searchResults = await yts(query);
-    if (searchResults.videos.length === 0) {
-      return api.sendMessage("No songs found for your query.", event.threadID, event.messageID);
+    const music = searchResults.videos[0];
+    const musicUrl = music.url;
+
+    const cacheDir = path.join(__dirname, 'cache');
+    if (!fs.existsSync(cacheDir)) fs.mkdirSync(cacheDir);
+
+    const time = new Date();
+    const timestamp = time.toISOString().replace(/[:.]/g, "-");
+    const filePath = path.join(cacheDir, `${timestamp}_music.mp3`);
+
+    api.sendMessage(`Downloading "${music.title}"...`, event.threadID, event.messageID);
+
+    // Request to your API
+    const downloadResponse = await axios.get(`https://aryanchauhanapi.onrender.com/youtube/audio?url=${musicUrl}`);
+    const downloadLink = downloadResponse.data.result.link;
+
+    if (!downloadLink) {
+      return api.sendMessage("Unable to retrieve the download link.", event.threadID, event.messageID);
     }
 
-    const videoUrl = searchResults.videos[0].url;
-    const downloadUrl = `https://aryanchauhanapi.onrender.com/youtube/audio?url=${encodeURIComponent(videoUrl)}`;
-
-    const res = await axios.get(downloadUrl);
-    if (res.status !== 200) {
-      throw new Error(`Request failed with status code ${res.status}`);
-    }
-
-    const { link, title } = res.data.result;
-
-    if (!link) {
-      throw new Error("Download link not found in the response.");
-    }
-
-    let sanitizedTitle = title.replace(/[^a-zA-Z0-9_.-]/g, '_').replace(/_+/g, '_').replace(/^_+|_+$/g, '');
-    const fileName = `${sanitizedTitle}.mp3`;
-    const filePath = path.join(__dirname, "cache", fileName);
-
-    // Ensure the cache directory exists
-    if (!fs.existsSync(path.join(__dirname, "cache"))) {
-      fs.mkdirSync(path.join(__dirname, "cache"));
-    }
-
-    const response = await axios({
+    // Download the file
+    const fileResponse = await axios({
+      url: downloadLink,
       method: 'GET',
-      url: link,
       responseType: 'stream'
     });
 
-    const writeStream = fs.createWriteStream(filePath);
-    response.data.pipe(writeStream);
+    const writer = fs.createWriteStream(filePath);
+    fileResponse.data.pipe(writer);
 
-    writeStream.on('finish', () => {
-      api.sendMessage({
-        body: sanitizedTitle,
+    writer.on('finish', () => {
+      if (fs.statSync(filePath).size > 26214400) {
+        fs.unlinkSync(filePath);
+        return api.sendMessage('The file size exceeds 25MB and cannot be sent.', event.threadID, event.messageID);
+      }
+
+      const message = {
+        body: `${music.title}\n${music.description}`,
         attachment: fs.createReadStream(filePath)
-      }, event.threadID, () => {
+      };
+
+      api.sendMessage(message, event.threadID, () => {
         fs.unlinkSync(filePath);
       }, event.messageID);
     });
 
-    writeStream.on('error', (error) => {
-      console.error("Error writing file:", error);
-      api.sendMessage("Failed to save the audio file.", event.threadID, event.messageID);
+    writer.on('error', (err) => {
+      if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+      api.sendMessage(`An error occurred while saving the file: ${err.message}`, event.threadID, event.messageID);
     });
-
   } catch (error) {
-    console.error("Error processing request:", error);
-
-    let errorMessage = "An error occurred while processing your request. Please try again.";
-    
-    if (error.response) {
-      // Server responded with a status code other than 2xx
-      errorMessage += ` Server responded with status code ${error.response.status}.`;
-    } else if (error.request) {
-      // Request was made but no response was received
-      errorMessage += " No response received from the server.";
-    } else {
-      // Other errors
-      errorMessage += ` Error: ${error.message}`;
-    }
-
-    api.sendMessage(errorMessage, event.threadID, event.messageID);
+    api.sendMessage(`An unexpected error occurred: ${error.message}`, event.threadID, event.messageID);
   }
 };

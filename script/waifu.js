@@ -1,5 +1,6 @@
 const axios = require('axios');
 const fs = require('fs');
+const path = require('path');
 
 module.exports.config = {
   name: "waifu",
@@ -11,24 +12,30 @@ module.exports.config = {
 
 module.exports.run = async ({ api, event }) => {
   try {
-    const response = await axios.get('https://aryanchauhanapi.onrender.com/api/waifu');
-    const imageUrl = response.data.url; // Extract the URL from the JSON response
+    const response = await axios.get('https://aryanchauhanapi.onrender.com/api/waifu', { responseType: 'stream' });
+    const imageUrl = response.data.url;
 
     const currentTime = new Date().toISOString().replace(/[:.-]/g, '_'); // Generate a timestamp string
-    const imagePath = `./script/cache/waifu_${currentTime}.png`;
+    const cacheDir = './script/cache';
+    const imagePath = path.join(cacheDir, `waifu_${currentTime}.png`);
 
     // Ensure the cache folder exists
-    if (!fs.existsSync('./script/cache')) {
-      fs.mkdirSync('./script/cache', { recursive: true });
+    if (!fs.existsSync(cacheDir)) {
+      fs.mkdirSync(cacheDir, { recursive: true });
     }
 
     const writer = fs.createWriteStream(imagePath);
-    const { data } = await axios.get(imageUrl, { responseType: 'stream' });
-    data.pipe(writer);
+    response.data.pipe(writer);
 
     writer.on('finish', () => {
-      api.sendMessage({ attachment: fs.createReadStream(imagePath) }, event.threadID, event.messageID, () => {
-        fs.unlinkSync(imagePath);
+      api.sendMessage({ attachment: fs.createReadStream(imagePath) }, event.threadID, event.messageID, (error) => {
+        if (error) {
+          console.error('Error sending waifu image:', error.message);
+        }
+        // Clean up the cached file after sending
+        fs.unlink(imagePath, (err) => {
+          if (err) console.error('Error removing cached image:', err.message);
+        });
       });
     });
 

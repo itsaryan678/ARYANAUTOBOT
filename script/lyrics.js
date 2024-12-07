@@ -1,6 +1,4 @@
 const axios = require('axios');
-const fs = require('fs');
-const path = require('path');
 
 module.exports.config = {
   name: "lyrics",
@@ -20,29 +18,28 @@ module.exports.run = async function({
 }) {
   try {
     const songName = args.join(" ");
-    
+    const baseApiUrl = "https://aryanchauhanapi.onrender.com";
+
     if (!songName) {
-      throw new Error(`No song name provided. Please specify the song name.`);
+      return api.sendMessage("❌ Please provide a song name.", event.threadID, event.messageID);
     }
 
-    const response = await axios.get(`https://aryanchauhanapi.onrender.com/api/lyrics?songName=${encodeURIComponent(songName)}`);
+    const response = await axios.get(`${baseApiUrl}/api/lyrics?songName=${encodeURIComponent(songName)}`);
 
     if (response.data && response.data.lyrics) {
       const { lyrics, title, artist, image } = response.data;
 
-      const imageStream = fs.createReadStream(image);
+      const imageResponse = await axios.get(image, { responseType: 'stream' });
 
-      await api.sendMessage({
+      return api.sendMessage({
         body: `📚 𝗧𝗶𝘁𝗹𝗲: ${title}\n🔎 𝗔𝗿𝘁𝗶𝘀𝘁: ${artist}\n\n📝 𝗟𝘆𝗿𝗶𝗰𝘀\n${lyrics}`,
-        attachment: imageStream
+        attachment: imageResponse.data
       }, event.threadID, event.messageID);
-
-      console.log(`Sent lyrics for "${title}" by ${artist} to the user.`);
     } else {
-      throw new Error(`Invalid or missing response from lyrics API.`);
+      throw new Error("No lyrics found for the specified song.");
     }
   } catch (error) {
-    console.error(`❌ | Failed to get lyrics API response: ${error.message}`);
-    api.sendMessage(`❌ | ${error.message}`, event.threadID);
+    console.error(`❌ | Failed to fetch lyrics: ${error.message}`);
+    return api.sendMessage(`❌ An error occurred: ${error.message}`, event.threadID, event.messageID);
   }
 };

@@ -47,28 +47,23 @@ module.exports.run = async function({ api, event, args }) {
 
     // API call to get download link
     const downloadResponse = await axios.get(`https://aryanchauhanapi.onrender.com/youtube/audio?url=${musicUrl}`);
-    console.log("API Response:", downloadResponse.data); // Debug log
-
     const downloadLink = downloadResponse.data?.result?.link;
     const title = downloadResponse.data?.result?.title;
-    const filesize = downloadResponse.data?.result?.filesize;
 
     if (!downloadLink) {
       return api.sendMessage("Unable to retrieve the download link.", event.threadID, event.messageID);
     }
 
     console.log(`Download Link: ${downloadLink}`);
-    console.log(`File Size: ${filesize}`);
-    console.log(`Title: ${title}`);
 
-    // Encode URL to handle special characters
-    const encodedUrl = encodeURI(downloadLink);
-
-    // Download the file
+    // File download with User-Agent header
     const fileResponse = await axios({
-      url: encodedUrl,
+      url: downloadLink,
       method: 'GET',
-      responseType: 'stream'
+      responseType: 'stream',
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+      }
     });
 
     const writer = fs.createWriteStream(filePath);
@@ -81,7 +76,7 @@ module.exports.run = async function({ api, event, args }) {
       }
 
       const message = {
-        body: `${title}\nFile Size: ${(filesize / (1024 * 1024)).toFixed(2)} MB`,
+        body: `${title}\nFile downloaded successfully.`,
         attachment: fs.createReadStream(filePath)
       };
 
@@ -95,7 +90,7 @@ module.exports.run = async function({ api, event, args }) {
       api.sendMessage(`An error occurred while saving the file: ${err.message}`, event.threadID, event.messageID);
     });
   } catch (error) {
-    console.error("Error:", error); // Debug log
+    console.error("Error:", error.message);
     api.sendMessage(`An unexpected error occurred: ${error.message}`, event.threadID, event.messageID);
   }
 };

@@ -34,7 +34,7 @@ module.exports = {
         credits: 'Team Clayx | Developer',
         cooldown: 5
     },
-    run: async function({ api, event, args }) {  // Ensure 'message' is removed if using 'api.sendMessage'
+    run: async function({ api, event, args }) {
         const query = args.join(' ');
 
         if (!query) {

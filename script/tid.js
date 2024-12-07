@@ -28,7 +28,7 @@ module.exports.run = async function({
     if (imageSrc) {
       const callback = async function() {
         api.sendMessage({
-            body: `Thread ID: ${event.threadID}\n\nGroup Thread Image:`,
+            body: `Thread ID: ${event.threadID}`,
             attachment: fs.createReadStream(imagePath)
           }, event.threadID,
           () => {

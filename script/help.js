@@ -46,13 +46,13 @@ module.exports.run = async function({
       let page = 1;
       let start = (page - 1) * pages;
       let end = start + pages;
-      let helpMessage = `📚| 𝗖𝗢𝗠𝗠𝗔𝗡𝗗 𝗟𝗜𝗦𝗧\n\n`;
+      let helpMessage = `${sans["C"]}𝗢𝗠𝗠𝗔𝗡𝗗 𝗟𝗜𝗦𝗧\n\n`;
       for (let i = start; i < Math.min(end, commands.length); i++) {
-        helpMessage += `\t➜ ${bold[prefix]}${sans[commands[i]]}\n`;
+        helpMessage += `\t${i + 1}. 「 ${bold[prefix]}${sans[commands[i]]} 」\n`;
       }
       helpMessage += '\nEvent List:\n\n';
       eventCommands.forEach((eventCommand, index) => {
-        helpMessage += `\t➜ ${bold[prefix]}${sans[eventCommand]}\n`;
+        helpMessage += `\t${index + 1}. 「 ${bold[prefix]}${sans[eventCommand]} 」\n`;
       });
       helpMessage += `\nPage ${page}/${Math.ceil(commands.length / pages)}. To view the next page, type '${bold[prefix]}help page number'. To view information about a specific command, type '${bold[prefix]}help command name'.`;
       api.sendMessage(helpMessage, event.threadID, event.messageID);
@@ -63,11 +63,11 @@ module.exports.run = async function({
       let end = start + pages;
       let helpMessage = `${sans["C"]}𝗢𝗠𝗠𝗔𝗡𝗗 𝗟𝗜𝗦𝗧\n\n`;
       for (let i = start; i < Math.min(end, commands.length); i++) {
-        helpMessage += `\t➜ ${bold[prefix]}${sans[commands[i]]}\n`;
+        helpMessage += `\t${i + 1}. 「 ${bold[prefix]}${sans[commands[i]]} 」\n`;
       }
       helpMessage += '\nEvent List:\n\n';
       eventCommands.forEach((eventCommand, index) => {
-        helpMessage += `\t➜ ${bold[prefix]}${sans[eventCommand]}\n`;
+        helpMessage += `\t${index + 1}. 「 ${bold[prefix]}${sans[eventCommand]} 」\n`;
       });
       helpMessage += `\nPage ${page} of ${Math.ceil(commands.length / pages)}`;
       api.sendMessage(helpMessage, event.threadID, event.messageID);

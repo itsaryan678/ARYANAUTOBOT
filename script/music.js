@@ -31,6 +31,10 @@ module.exports.run = async function({ api, event, args }) {
     const downloadUrl = `https://aryanchauhanapi.onrender.com/youtube/audio?url=${encodeURIComponent(videoUrl)}`;
 
     const res = await axios.get(downloadUrl);
+    if (res.status !== 200) {
+      throw new Error(`Request failed with status code ${res.status}`);
+    }
+
     const music = res.data.result.link;
 
     const response = await axios({
@@ -43,6 +47,11 @@ module.exports.run = async function({ api, event, args }) {
     const sanitizedTitle = title.replace(/[^a-zA-Z0-9_.-]/g, '_').replace(/_+/g, '_').replace(/^_+|_+$/g, '');
     const fileName = `${sanitizedTitle}.mp3`;
     const filePath = path.join(__dirname, "cache", fileName);
+
+    // Ensure the cache directory exists
+    if (!fs.existsSync(path.join(__dirname, "cache"))) {
+      fs.mkdirSync(path.join(__dirname, "cache"));
+    }
 
     const writeStream = fs.createWriteStream(filePath);
     response.data.pipe(writeStream);
@@ -63,6 +72,7 @@ module.exports.run = async function({ api, event, args }) {
 
   } catch (error) {
     console.error("Error processing request:", error);
+
     let errorMessage = "An error occurred while processing your request. Please try again.";
     
     if (error.response) {
@@ -71,8 +81,11 @@ module.exports.run = async function({ api, event, args }) {
     } else if (error.request) {
       // Request was made but no response was received
       errorMessage += " No response received from the server.";
+    } else if (error.message.includes('404')) {
+      // Specific 404 error message
+      errorMessage = "The requested resource was not found (404).";
     } else {
-      // Other errors (e.g., network issues, invalid URL)
+      // Other errors
       errorMessage += ` Error: ${error.message}`;
     }
 

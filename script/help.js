@@ -181,7 +181,7 @@ module.exports.run = async function ({ api, event, args, fonts, prefix }) {
       );
 
       if (targetCommand) {
-        const { name, aliases, version, credits, role, countDown, description, guide } =
+        const { name, aliases, version, credits, role, description, usage } =
           targetCommand.config;
         let helpMessage = apply(`╭•[ ${role === 2 ? "❌ | " : "✅ | "} ${name} ]\n`, bold);
         if (aliases) {

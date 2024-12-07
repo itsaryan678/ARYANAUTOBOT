@@ -1,4 +1,4 @@
-const { getUserData } = require("./economy/index");
+const { getUserData } = require("/economy/index.js");
 
 module.exports.config = {
   name: "balance",

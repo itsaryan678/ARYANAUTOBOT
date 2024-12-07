@@ -17,13 +17,11 @@ module.exports.run = async ({ api, event, args }) => {
       return api.sendMessage("❌ Please provide a valid query.", event.threadID, event.messageID);
     }
 
-    const response = await axios.get(`https://aryanchauhanapi.onrender.com/pinterest?query=${query}&limit=9`);
+    const response = await axios.get(`https://aryanchauhanapi.onrender.com/api/pin?query=${query}&count=10`);
     const imageUrls = response.data;
 
     if (imageUrls.length > 0) {
-      const imagePaths = [];
-      for (let i = 0; i < imageUrls.length; i++) {
-        const imageUrl = imageUrls[i];
+      const imagePaths = await Promise.all(imageUrls.map(async (imageUrl, i) => {
         const currentTime = Date.now();
         const imagePath = `./script/cache/pinterest_${currentTime}_${i + 1}.jpg`;
 
@@ -31,14 +29,11 @@ module.exports.run = async ({ api, event, args }) => {
         const { data } = await axios.get(imageUrl, { responseType: 'stream' });
         data.pipe(writer);
 
-        writer.on('finish', () => {
-          imagePaths.push(imagePath); // Collect all paths
+        return new Promise((resolve, reject) => {
+          writer.on('finish', () => resolve(imagePath));
+          writer.on('error', reject);
         });
-
-        writer.on('error', (error) => {
-          console.error('Error downloading Pinterest image:', error.message);
-        });
-      }
+      }));
 
       if (imagePaths.length > 0) {
         api.sendMessage({ attachment: imagePaths.map(fs.createReadStream) }, event.threadID, () => {

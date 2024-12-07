@@ -16,22 +16,22 @@ module.exports.config = {
 };
 
 module.exports.run = async function({ api, event, args }) {
-  const query = args.join(" ");
-  if (!query) {
-    return api.sendMessage("Please provide a song name.", event.threadID, event.messageID);
-  }
-
-  await api.sendMessage('⏳', event.messageID);
-
-  let searchResults = await yts(query);
-  if (searchResults.videos.length === 0) {
-    return api.sendMessage("No songs found for your query.", event.threadID, event.messageID);
-  }
-
-  const videoUrl = searchResults.videos[0].url;
-  const downloadUrl = `https://aryanchauhanapi.onrender.com/youtube/audio?url=${encodeURIComponent(videoUrl)}`;
-
   try {
+    const query = args.join(" ");
+    if (!query) {
+      return api.sendMessage("Please provide a song name.", event.threadID, event.messageID);
+    }
+
+    await api.sendMessage('⏳', event.messageID);
+
+    let searchResults = await yts(query);
+    if (searchResults.videos.length === 0) {
+      return api.sendMessage("No songs found for your query.", event.threadID, event.messageID);
+    }
+
+    const videoUrl = searchResults.videos[0].url;
+    const downloadUrl = `https://aryanchauhanapi.onrender.com/youtube/audio?url=${encodeURIComponent(videoUrl)}`;
+
     const res = await axios.get(downloadUrl);
     const music = res.data.result.link;
 
@@ -65,8 +65,7 @@ module.exports.run = async function({ api, event, args }) {
 
     await api.sendMessage('✅', event.messageID);
   } catch (error) {
-    console.error("Error downloading or sending audio:", error);
-    api.sendMessage('❌', event.messageID);
+    console.error("Error:", error);
     api.sendMessage("An error occurred while processing your request. Please try again.", event.threadID, event.messageID);
   }
 };

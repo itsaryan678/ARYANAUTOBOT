@@ -5,32 +5,31 @@ module.exports.config = {
   version: "1.0.0",
   description: "Check your current balance.",
   usage: "balance",
+  cooldown: 5
 };
 
 module.exports.run = async ({ api, event }) => {
   try {
     const userId = event.senderID;
-    const userData = await Currencies.getData(userId);
+    const database = await Currencies.getData(userId);
 
-    if (!userData) {
+    if (!database) {
       return api.sendMessage(
-        "❌ You don't have an account in the system. Start participating to earn money!",
+        "❌ You don't have an account in the system. Please join or participate to create one.",
         event.threadID,
         event.messageID
       );
     }
 
-    const userName = userData.name || "Unknown User";
-    const balance = userData.money || 0;
-
-    api.sendMessage(
-      `💰 **Your Balance**\n\n👤 Name: ${userName}\n💵 Balance: $${balance}`,
+    const balance = database.money || 0;
+    return api.sendMessage(
+      `💸 Your current balance is: $${balance}`,
       event.threadID,
       event.messageID
     );
   } catch (error) {
     console.error(`Balance Command Error: ${error.message}`);
-    api.sendMessage(
+    return api.sendMessage(
       "❌ An error occurred while fetching your balance. Please try again later.",
       event.threadID,
       event.messageID

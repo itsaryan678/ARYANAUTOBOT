@@ -37,6 +37,10 @@ module.exports.run = async function({ api, event, args }) {
 
     const { link, title } = res.data.result;
 
+    if (!link) {
+      throw new Error("Download link not found in the response.");
+    }
+
     let sanitizedTitle = title.replace(/[^a-zA-Z0-9_.-]/g, '_').replace(/_+/g, '_').replace(/^_+|_+$/g, '');
     const fileName = `${sanitizedTitle}.mp3`;
     const filePath = path.join(__dirname, "cache", fileName);

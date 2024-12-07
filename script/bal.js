@@ -1,20 +1,22 @@
-const { getUserData } = require("/economy/index.js");
+const Currencies = require('../auto.js');
 
 module.exports.config = {
   name: "balance",
   version: "1.0.0",
-  usage: "balance",
   description: "Check your current balance.",
+  usage: "balance",
 };
 
 module.exports.run = async ({ api, event }) => {
-  const { senderID } = event;
-  const senderName = event.userInfo?.name || "Unknown User";
+  const userId = event.senderID;
+  const userData = await Currencies.getData(userId);
 
-  const userData = getUserData(senderID, senderName);
+  if (!userData) {
+    return api.sendMessage("❌ You don't have an account in the system. Try participating in activities!", event.threadID, event.messageID);
+  }
 
   api.sendMessage(
-    `💰 **Balance**\n\nName: ${userData.name}\nUID: ${userData.uid}\nBalance: $${userData.balance}`,
+    `💰 **Balance**\n\nUser: ${userData.name}\nBalance: $${userData.money}`,
     event.threadID,
     event.messageID
   );

@@ -8,16 +8,32 @@ module.exports.config = {
 };
 
 module.exports.run = async ({ api, event }) => {
-  const userId = event.senderID;
-  const userData = await Currencies.getData(userId);
+  try {
+    const userId = event.senderID;
+    const userData = await Currencies.getData(userId);
 
-  if (!userData) {
-    return api.sendMessage("❌ You don't have an account in the system. Try participating in activities!", event.threadID, event.messageID);
+    if (!userData) {
+      return api.sendMessage(
+        "❌ You don't have an account in the system. Start participating to earn money!",
+        event.threadID,
+        event.messageID
+      );
+    }
+
+    const userName = userData.name || "Unknown User";
+    const balance = userData.money || 0;
+
+    api.sendMessage(
+      `💰 **Your Balance**\n\n👤 Name: ${userName}\n💵 Balance: $${balance}`,
+      event.threadID,
+      event.messageID
+    );
+  } catch (error) {
+    console.error(`Balance Command Error: ${error.message}`);
+    api.sendMessage(
+      "❌ An error occurred while fetching your balance. Please try again later.",
+      event.threadID,
+      event.messageID
+    );
   }
-
-  api.sendMessage(
-    `💰 **Balance**\n\nUser: ${userData.name}\nBalance: $${userData.money}`,
-    event.threadID,
-    event.messageID
-  );
 };

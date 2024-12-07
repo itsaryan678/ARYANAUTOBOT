@@ -1,6 +1,5 @@
 const axios = require('axios');
 const fs = require('fs');
-const moment = require('moment');
 
 module.exports.config = {
   name: "waifu",
@@ -13,11 +12,12 @@ module.exports.config = {
 module.exports.run = async ({ api, event }) => {
   try {
     const response = await axios.get('https://aryanchauhanapi.onrender.com/api/waifu');
-    const imageUrl = response.data.url; 
+    const imageUrl = response.data.url; // Extract the URL from the JSON response
 
-    const currentTime = moment().format('YYYY-MM-DD_HH-mm-ss');
+    const currentTime = new Date().toISOString().replace(/[:.-]/g, '_'); // Generate a timestamp string
     const imagePath = `./script/cache/waifu_${currentTime}.png`;
 
+    // Ensure the cache folder exists
     if (!fs.existsSync('./script/cache')) {
       fs.mkdirSync('./script/cache', { recursive: true });
     }

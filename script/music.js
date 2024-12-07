@@ -1,23 +1,28 @@
 const path = require('path');
+const fs = require('fs');
+const axios = require('axios');
+const yts = require('yt-search');
+
 module.exports.config = {
   name: "music",
   version: "1.0.0",
   role: 0,
   hasPrefix: true,
   aliases: ['play'],
-  usage: 'Music [prompt]',
+  usage: 'music [prompt]',
   description: 'Search music on YouTube',
   credits: 'Developer',
   cooldown: 5
 };
-module.exports.run = async function({ api, event, args }) {
-  const fs = require("fs-extra");
-  const axios = require("axios");
-  const yts = require("yt-search");
 
+module.exports.run = async function({ api, event, args }) {
   const musicName = args.join(' ');
   if (!musicName) {
-    api.sendMessage('To get started, type "music" followed by the title of the song you want.', event.threadID, event.messageID);
+    api.sendMessage(
+      'To get started, type "music" followed by the title of the song you want.',
+      event.threadID,
+      event.messageID
+    );
     return;
   }
 
@@ -35,23 +40,33 @@ module.exports.run = async function({ api, event, args }) {
     const cacheDir = path.join(__dirname, 'cache');
     if (!fs.existsSync(cacheDir)) fs.mkdirSync(cacheDir);
 
-    const time = new Date();
-    const timestamp = time.toISOString().replace(/[:.]/g, "-");
-    const filePath = path.join(cacheDir, `${timestamp}_music.mp3`);
+    const fileName = `${Date.now()}_${Math.random().toString(36).substr(2, 5)}_music.mp3`;
+    const filePath = path.join(cacheDir, fileName);
 
     api.sendMessage(`Downloading "${music.title}"...`, event.threadID, event.messageID);
 
-    // Request to your API
+    // API call to get download link
     const downloadResponse = await axios.get(`https://aryanchauhanapi.onrender.com/youtube/audio?url=${musicUrl}`);
-    const downloadLink = downloadResponse.data.result.link;
+    console.log("API Response:", downloadResponse.data); // Debug log
+
+    const downloadLink = downloadResponse.data?.result?.link;
+    const title = downloadResponse.data?.result?.title;
+    const filesize = downloadResponse.data?.result?.filesize;
 
     if (!downloadLink) {
       return api.sendMessage("Unable to retrieve the download link.", event.threadID, event.messageID);
     }
 
+    console.log(`Download Link: ${downloadLink}`);
+    console.log(`File Size: ${filesize}`);
+    console.log(`Title: ${title}`);
+
+    // Encode URL to handle special characters
+    const encodedUrl = encodeURI(downloadLink);
+
     // Download the file
     const fileResponse = await axios({
-      url: downloadLink,
+      url: encodedUrl,
       method: 'GET',
       responseType: 'stream'
     });
@@ -60,13 +75,13 @@ module.exports.run = async function({ api, event, args }) {
     fileResponse.data.pipe(writer);
 
     writer.on('finish', () => {
-      if (fs.statSync(filePath).size > 26214400) {
+      if (fs.statSync(filePath).size > 26214400) { // 25MB limit
         fs.unlinkSync(filePath);
         return api.sendMessage('The file size exceeds 25MB and cannot be sent.', event.threadID, event.messageID);
       }
 
       const message = {
-        body: `${music.title}\n${music.description}`,
+        body: `${title}\nFile Size: ${(filesize / (1024 * 1024)).toFixed(2)} MB`,
         attachment: fs.createReadStream(filePath)
       };
 
@@ -80,6 +95,7 @@ module.exports.run = async function({ api, event, args }) {
       api.sendMessage(`An error occurred while saving the file: ${err.message}`, event.threadID, event.messageID);
     });
   } catch (error) {
+    console.error("Error:", error); // Debug log
     api.sendMessage(`An unexpected error occurred: ${error.message}`, event.threadID, event.messageID);
   }
 };

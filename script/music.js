@@ -1,13 +1,13 @@
 const path = require('path');
 module.exports.config = {
-  name: "music",
+  name: "sing",
   version: "1.0.0",
   role: 0,
   hasPrefix: true,
   aliases: ['play'],
   usage: 'Music [promt]',
   description: 'Search music in youtube',
-  credits: 'Deveploper',
+  credits: 'Aryan Chauhan',
   cooldown: 5
 };
 module.exports.run = async function({
@@ -16,45 +16,59 @@ module.exports.run = async function({
   args
 }) {
   const fs = require("fs-extra");
-  const ytdl = require("ytdl-core");
-  const yts = require("yt-search");
-  const musicName = args.join(' ');
-  if (!musicName) {
-    api.sendMessage(`To get started, type music and the title of the song you want.`, event.threadID, event.messageID);
-    return;
-  }
-  try {
-    api.sendMessage(`Searching for "${musicName}"...`, event.threadID, event.messageID);
-    const searchResults = await yts(musicName);
-    if (!searchResults.videos.length) {
-      return api.sendMessage("Can't find the search.", event.threadID, event.messageID);
-    } else {
-      const music = searchResults.videos[0];
-      const musicUrl = music.url;
-      const stream = ytdl(musicUrl, {
-        filter: "audioonly"
+  const yts = require("yt-search");   
+   const query = args.join(" ");
+    if (!query) {
+      return message.reply("Please provide a song name.");
+    }
+
+    message.reaction('⏳', event.messageID);
+
+    let searchResults = await yts(query);
+    if (searchResults.videos.length === 0) {
+      return message.reply("No songs found for your query.");
+    }
+
+    const videoUrl = searchResults.videos[0].url;
+    const downloadUrl = `https://aryanchauhanapi.onrender.com/youtube/audio?url=${encodeURIComponent(videoUrl)}`;
+
+    try {
+      const res = await axios.get(downloadUrl);
+      const music = res.data.result.link;
+
+      const response = await axios({
+        method: 'GET',
+        url: music,
+        responseType: 'stream'
       });
-      const time = new Date();
-      const timestamp = time.toISOString().replace(/[:.]/g, "-");
-      const filePath = path.join(__dirname, 'cache', `${timestamp}_music.mp3`);
-      stream.pipe(fs.createWriteStream(filePath));
-      stream.on('response', () => {});
-      stream.on('info', (info) => {});
-      stream.on('end', () => {
-        if (fs.statSync(filePath).size > 26214400) {
-          fs.unlinkSync(filePath);
-          return api.sendMessage('The file could not be sent because it is larger than 25MB.', event.threadID);
-        }
-        const message = {
-          body: `${music.title}`,
+
+      let title = res.data.result.title || "song";
+      const sanitizedTitle = title.replace(/[^a-zA-Z0-9_.-]/g, '_').replace(/_+/g, '_').replace(/^_+|_+$/g, '');
+      const fileName = `${sanitizedTitle}.mp3`;
+      const filePath = path.join(__dirname, "cache", fileName);
+
+      const writeStream = fs.createWriteStream(filePath);
+      response.data.pipe(writeStream);
+
+      writeStream.on('finish', () => {
+        message.reply({
+          body: sanitizedTitle,
           attachment: fs.createReadStream(filePath)
-        };
-        api.sendMessage(message, event.threadID, () => {
+        }, event.threadID, () => {
           fs.unlinkSync(filePath);
         }, event.messageID);
       });
+
+      writeStream.on('error', (error) => {
+        console.error("Error writing file:", error);
+        message.reply("Failed to save the audio file.");
+      });
+
+      await message.reaction('✅', event.messageID);
+    } catch (error) {
+      console.error("Error downloading or sending audio:", error);
+      message.reaction('❌', event.messageID);
+      message.reply("An error occurred while processing your request. Please try again.");
     }
-  } catch (error) {
-    api.sendMessage('An error occurred while processing your request.', event.threadID, event.messageID);
   }
 };

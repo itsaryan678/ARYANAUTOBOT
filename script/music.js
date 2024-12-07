@@ -31,7 +31,7 @@ module.exports = {
         aliases: ['play', 'music'],
         usage: '{pn} <search query>',
         description: 'Search and download music from YouTube',
-        credits: 'Team Clayx | Developer',
+        credits: 'Aryan Chauhan',
         cooldown: 5
     },
     run: async function({ api, event, args }) {
@@ -44,9 +44,6 @@ module.exports = {
         let loadingMessageId;
 
         try {
-            const loadingMessage = await api.sendMessage(`🎧 Searching for "${query}"...`, event.threadID);
-            loadingMessageId = loadingMessage.messageID;
-
             const searchResults = await yts(query);
 
             if (!searchResults.videos.length) {

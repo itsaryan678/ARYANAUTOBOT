@@ -5,22 +5,23 @@ module.exports.config = {
   name: "pinterest",
   version: "1.0.0",
   aliases: ['pin'],
-  description: "Send random Pinterest images.",
+  description: "Send random Pinterest images all at once.",
   usage: "pinterest <query>",
   cooldown: 5
 };
 
 module.exports.run = async ({ api, event, args }) => {
   try {
-    const query = args.join(" "); 
+    const query = args.join(" ");
     if (!query) {
       return api.sendMessage("❌ Please provide a valid query.", event.threadID, event.messageID);
     }
 
     const response = await axios.get(`https://aryanchauhanapi.onrender.com/pinterest?query=${query}&limit=9`);
-    const imageUrls = response.data; 
+    const imageUrls = response.data;
 
     if (imageUrls.length > 0) {
+      const imagePaths = [];
       for (let i = 0; i < imageUrls.length; i++) {
         const imageUrl = imageUrls[i];
         const currentTime = Date.now();
@@ -31,13 +32,17 @@ module.exports.run = async ({ api, event, args }) => {
         data.pipe(writer);
 
         writer.on('finish', () => {
-          api.sendMessage({ attachment: fs.createReadStream(imagePath) }, event.threadID, () => {
-            fs.unlinkSync(imagePath);
-          });
+          imagePaths.push(imagePath); // Collect all paths
         });
 
         writer.on('error', (error) => {
           console.error('Error downloading Pinterest image:', error.message);
+        });
+      }
+
+      if (imagePaths.length > 0) {
+        api.sendMessage({ attachment: imagePaths.map(fs.createReadStream) }, event.threadID, () => {
+          imagePaths.forEach(path => fs.unlinkSync(path));
         });
       }
     } else {

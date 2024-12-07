@@ -6,7 +6,7 @@ module.exports.config = {
   name: "cdp",
   version: "1.0.0",
   role: 0,
-  hasPrefix: false,
+  hasPrefix: true,
   usage: 'cdp',
   description: 'Fetch a coupled image pair (male and female) and send them to the user',
   credits: 'Aryan Chauhan',

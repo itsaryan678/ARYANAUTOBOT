@@ -6,7 +6,7 @@ module.exports.config = {
   name: "mageai",
   version: "1.0.0",
   role: 0,
-  hasPrefix: false,
+  hasPrefix: true,
   usage: 'meageai [prompt]',
   description: 'Generate an image based on a text prompt using Magic Studio API.',
   credits: 'Aryan Chauhan',

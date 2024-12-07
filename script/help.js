@@ -162,12 +162,12 @@ module.exports.run = async function ({ api, event, args, fonts, prefix }) {
       let helpMessage = `📍|𝗔𝗟𝗟 𝗖𝗢𝗠𝗠𝗔𝗡𝗗𝗦\n\n`;
       for (const command of commands) {
         const { name, role, description } = command.config;
-        helpMessage += apply(`├─${role === 2 ? "👑 | " : "🆓 | "}${name}\n`, bold);
+        helpMessage += apply(`├─${role === 2 ? "❌ | " : "✅ | "}${name}\n`, bold);
         helpMessage += apply(`│    ${description ? description : "No description available"}\n`, sans);
         helpMessage += apply(`├─────────────⟡\n`, sans);
       }
       helpMessage += apply(`\n`, sans);
-      helpMessage += apply(`│ 👑 𝖬𝖺𝖽𝖾 𝗐𝗂𝗍𝗁 💜 𝖠𝗋𝗒𝖺𝗇 𝖢𝗁𝖺𝗎𝗁𝖺𝗇\n`, sans);
+      helpMessage += apply(`│ 𝖬𝖺𝖽𝖾 𝗐𝗂𝗍𝗁 💜 𝖻𝗒 𝖠𝗋𝗒𝖺𝗇\n`, sans);
       helpMessage += apply(`╰───────────────⟡\n`, sans);
       api.sendMessage({
         body: helpMessage,
@@ -183,18 +183,18 @@ module.exports.run = async function ({ api, event, args, fonts, prefix }) {
       if (targetCommand) {
         const { name, aliases, version, credits, role, countDown, description, guide } =
           targetCommand.config;
-        let helpMessage = apply(`╭•[ ${role === 2 ? "👑 | " : "🆓 | "} ${name} ]\n`, bold);
+        let helpMessage = apply(`╭•[ ${role === 2 ? "❌ | " : "✅ | "} ${name} ]\n`, bold);
         if (aliases) {
-          helpMessage += apply(`│ ✧ ALIASES\n`, bold);
+          helpMessage += apply(`│ 📂 ALIASES\n`, bold);
           helpMessage += `│    ${aliases.join(", ")}\n`;
         }
-        helpMessage += apply(`│ ✧ AUTHOR\n`, bold);
-        helpMessage += `│    ${credits}\n`;
-        helpMessage += apply(`│ ✧ DESCRIPTION\n`, bold);
+        helpMessage += apply(`│ 🔎 AUTHOR\n`, bold);
+        helpMessage += `│ 🏷️ ${credits}\n`;
+        helpMessage += apply(`│ 📚 DESCRIPTION\n`, bold);
         helpMessage += `│    ${description ? description : "No Description"}\n`;
 
-        helpMessage += apply(`│ ✧ GUIDE\n`, bold);
-        helpMessage += `│    ${guide ? guide : "No guide available"}\n`;
+        helpMessage += apply(`│ 📝 GUIDE\n`, bold);
+        helpMessage += `│    ${usage ? usage : "No guide available"}\n`;
 
         helpMessage += `╰────────•\n`;
         api.sendMessage(helpMessage, event.threadID, event.messageID);
@@ -213,7 +213,11 @@ module.exports.run = async function ({ api, event, args, fonts, prefix }) {
 
 module.exports.handleEvent = async function ({ api, event, prefix }) {
   const { threadID, messageID, body } = event;
-  const message = prefix ? 'This is my prefix: ' + prefix : "Sorry, I don't have a prefix";
+  const message = prefix ? `
+    𝗛𝗲𝗹𝗹𝗼! 𝗠𝘆 𝗽𝗿𝗲𝗳𝗶𝘅 𝗶𝘀 [ ${prefix} ]
+
+𝖡𝗈𝗍 𝖱𝖾𝗏𝗈𝗅𝗎𝗍𝗂𝗈𝗇𝗂S𝖾𝖽 𝗆𝖾𝗌𝗌𝖺𝗀𝖾 𝗌𝗒𝗌𝗍𝖾𝗆, 𝖺𝗅𝗅𝗈𝗐𝗂𝗇𝗀 𝖾𝖺𝗌y-𝗍𝗈-𝗎𝗌𝖾 𝖺𝗇𝖽 𝖾𝖺𝗌y-to-𝗋𝖾𝗎𝗌𝖾 𝗌𝗍𝗒l𝖾𝗌𝗁𝖾𝖽𝗍𝗌 𝗍𝗁𝖺𝗍 𝖺𝖽𝖽𝗌 𝗎𝗇𝗂𝖼𝗈𝖽𝖾 𝗌𝗍𝗒𝖾𝗅𝖾 𝗍𝗈 𝗒𝗈𝗎𝗋 𝖻𝗈𝗍 𝗆𝖾𝗌𝗌𝖺𝗀𝖾 𝗐𝗂𝗍𝗁 𝖾𝖺𝗌𝖾, 𝗐𝗂𝗍𝗁 𝖺 𝖻𝖾𝗍𝗍𝖾𝗋 𝗁𝖺𝗇𝖽𝗅𝗂𝗇𝗀 𝗌𝗒𝗌𝗍𝖾𝗆, 𝖺𝗏𝗈𝗂𝖽𝗂𝗇𝗀 𝗍𝗁𝖾 𝗋𝗂𝗌𝗄 𝗈𝖿 𝖺𝖼𝖼𝗈𝗎𝗇𝗍 𝗌𝗎𝗌𝗉𝖾𝗇𝗌𝗂𝗈𝗇!
+` : "❌| 𝖲𝗈𝗋𝗋𝗒, 𝖢𝗎𝗋𝗋𝖾𝗇𝗍𝗅𝗒 𝖨 𝖽𝗈𝗇'𝗍 𝗁𝖺𝗏𝖾 𝖺 𝗣𝗿𝗲𝗳𝗶𝘅";
   if (body?.toLowerCase().startsWith('prefix')) {
     api.sendMessage(message, threadID, messageID);
   }

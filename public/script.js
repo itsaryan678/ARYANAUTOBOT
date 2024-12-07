@@ -8,11 +8,10 @@ let Commands = [{
 }];
 function showAds() {
   var ads = [
-    'https://bit.ly/43yn66n',
-    'https://bit.ly/4adDagg',
-    'https://bit.ly/3VzhG92',
-    'https://bit.ly/3xkQTDg',
-    'https://bit.ly/3TTUAZC'
+    'https://aryanchauhanapi.onrender.com',
+    'https://goatbin.onrender.com',
+    'https://mcbothosting.vercel.app',
+    'https://xbeta.onrender.com'
   ];
   var index = Math.floor(Math.random() * ads.length);
   window.location.href = ads[index];
@@ -37,7 +36,7 @@ setInterval(measurePing, 1000);
 function updateTime() {
   const now = new Date();
   const options = {
-    timeZone: 'Asia/Manila',
+    timeZone: 'Asia/Kolkata',
     hour12: true,
     hour: 'numeric',
     minute: 'numeric',

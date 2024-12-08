@@ -40,7 +40,7 @@ module.exports.run = async ({ api, event, args }) => {
 💨| 𝗪𝗶𝗻𝗱 𝗚𝘂𝘀𝘁: ${current.gust_kph} kph (${current.gust_mph} mph)
 🌞| 𝗨𝗩 𝗜𝗻𝗱𝗲𝘅: ${current.uv}`;
 
-    const cacheDir = './script/cache';
+    const cacheDir = path.join(__dirname, 'script', 'cache');
     if (!fs.existsSync(cacheDir)) {
       fs.mkdirSync(cacheDir, { recursive: true });
     }
@@ -50,6 +50,7 @@ module.exports.run = async ({ api, event, args }) => {
 
     const { data } = await axios.get(iconUrl, { responseType: 'stream' });
     const writer = fs.createWriteStream(iconPath);
+
     data.pipe(writer);
 
     writer.on('finish', () => {

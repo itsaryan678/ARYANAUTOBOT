@@ -1,50 +1,99 @@
-const axios = require('axios');
-const fs = require('fs');
+const axios = require("axios");
+const path = require("path");
+const fs = require("fs");
 
 module.exports.config = {
   name: "pinterest",
   version: "1.0.0",
   aliases: ['pin'],
-  description: "Send random Pinterest images all at once.",
-  usage: "pinterest <query>",
-  cooldown: 5
+  description: "Search for images on Pinterest based on a query and fetch a specified number of images (1-100).",
+  cooldown: 5,
 };
 
 module.exports.run = async ({ api, event, args }) => {
+  const cacheDir = path.join(__dirname, "cache");
+
   try {
-    const query = args.join(" ");
-    if (!query) {
-      return api.sendMessage("❌ Please provide a valid query.", event.threadID, event.messageID);
+    const keySearch = args.join(" ").trim();
+    if (!keySearch.includes("-")) {
+      return api.sendMessage(
+        "Please enter your search query followed by a hyphen (`-`) and the number of images to fetch (e.g., `cats -5`).",
+        event.threadID,
+        event.messageID
+      );
     }
 
-    const response = await axios.get(`https://aryanchauhanapi.onrender.com/api/pin?query=${query}&count=10`);
-    const imageUrls = response.data;
+    const keySearchs = keySearch.substr(0, keySearch.indexOf("-")).trim();
+    let numberSearch = parseInt(keySearch.split("-").pop());
+    if (isNaN(numberSearch) || numberSearch < 1 || numberSearch > 100) {
+      return api.sendMessage(
+        "Please specify a valid number of images (1-100).",
+        event.threadID,
+        event.messageID
+      );
+    }
 
-    if (imageUrls.length > 0) {
-      const imagePaths = await Promise.all(imageUrls.map(async (imageUrl, i) => {
-        const currentTime = Date.now();
-        const imagePath = `./script/cache/pinterest_${currentTime}_${i + 1}.jpg`;
+    // Fetch image URLs
+    const apiUrl = `https://aryanchauhanapi.onrender.com/api/pin?query=${encodeURIComponent(keySearchs)}&limits=${numberSearch}`;
+    const res = await axios.get(apiUrl);
+    const data = res.data;
 
-        const writer = fs.createWriteStream(imagePath);
-        const { data } = await axios.get(imageUrl, { responseType: 'stream' });
-        data.pipe(writer);
+    if (!data || !Array.isArray(data) || data.length === 0) {
+      return api.sendMessage(
+        `No results found for "${keySearchs}". Please try another query.`,
+        event.threadID,
+        event.messageID
+      );
+    }
 
-        return new Promise((resolve, reject) => {
-          writer.on('finish', () => resolve(imagePath));
-          writer.on('error', reject);
+    if (!fs.existsSync(cacheDir)) {
+      fs.mkdirSync(cacheDir);
+    }
+
+    const imgData = [];
+    for (let i = 0; i < Math.min(numberSearch, data.length); i++) {
+      try {
+        const imgResponse = await axios.get(data[i], {
+          responseType: "arraybuffer",
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+          },
         });
-      }));
 
-      if (imagePaths.length > 0) {
-        api.sendMessage({ attachment: imagePaths.map(fs.createReadStream) }, event.threadID, () => {
-          imagePaths.forEach(path => fs.unlinkSync(path));
-        });
+        const imgPath = path.join(cacheDir, `${i + 1}.jpg`);
+        await fs.promises.writeFile(imgPath, imgResponse.data);
+        imgData.push(fs.createReadStream(imgPath));
+      } catch (error) {
+        console.error(`Error downloading image ${data[i]}:`, error.message);
       }
-    } else {
-      api.sendMessage("❌ No images found for the given query.", event.threadID, event.messageID);
     }
+
+    if (imgData.length === 0) {
+      return api.sendMessage(
+        `Failed to download any images for "${keySearchs}". Please try again.`,
+        event.threadID,
+        event.messageID
+      );
+    }
+
+    await api.sendMessage(
+      {
+        body: `Here are the top ${imgData.length} results for your query "${keySearchs}":`,
+        attachment: imgData,
+      },
+      event.threadID,
+      event.messageID
+    );
   } catch (error) {
-    console.error('Error fetching Pinterest images:', error.message);
-    api.sendMessage("❌ An error occurred while fetching the Pinterest images. Please try again later.", event.threadID, event.messageID);
+    console.error(error);
+    return api.sendMessage(
+      `An error occurred while processing your request: ${error.message}`,
+      event.threadID,
+      event.messageID
+    );
+  } finally {
+    if (fs.existsSync(cacheDir)) {
+      await fs.promises.rm(cacheDir, { recursive: true, force: true });
+    }
   }
 };

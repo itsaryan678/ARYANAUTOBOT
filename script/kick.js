@@ -13,8 +13,8 @@ module.exports.run = async function ({ api, event, args }) {
   try {
     let userId;
 
-    if (event.messageReply && event.messageReply.userID) {
-      userId = event.messageReply.userID;
+    if (event.messageReply && event.messageReply.userId) {
+      userId = event.messageReply.userId;
     }
     else if (event.mentions && Object.keys(event.mentions).length > 0) {
       userId = Object.keys(event.mentions)[0];

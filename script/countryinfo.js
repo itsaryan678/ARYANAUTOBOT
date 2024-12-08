@@ -26,7 +26,7 @@ module.exports.run = async ({ api, event, args }) => {
     const country = response.data.result[0];
 
     const flagUrl = country.flags.png;
-    const flagPath = path.join(__dirname, '..', 'cache', `${country.cca2.toLowerCase()}_flag.png`);
+    const flagPath = path.join(__dirname, 'cache', `${country.cca2.toLowerCase()}_flag.png`);
     const writer = fs.createWriteStream(flagPath);
 
     const { data: imageStream } = await axios.get(flagUrl, { responseType: 'stream' });

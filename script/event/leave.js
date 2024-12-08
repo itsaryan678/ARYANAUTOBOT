@@ -3,7 +3,7 @@ const path = require("path");
 const axios = require("axios");
 
 module.exports.config = {
-  name: "leaveNotification",
+  name: "leave",
   version: "1.2.5",
 };
 

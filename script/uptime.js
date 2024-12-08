@@ -3,7 +3,7 @@ const { execSync } = require('child_process');
 
 module.exports.config = {
   name: "uptime",
-  version: "1.0.0",
+  version: "1.0.1",
   aliases: ['up'],
   description: "Displays server uptime, system details, and performance metrics.",
   usage: "uptime",
@@ -16,11 +16,9 @@ module.exports.run = async ({ api, event }) => {
     const days = Math.floor(uptimeSeconds / (24 * 3600));
     const hours = Math.floor((uptimeSeconds % (24 * 3600)) / 3600);
     const minutes = Math.floor((uptimeSeconds % 3600) / 60);
-    const seconds = uptimeSeconds % 60;
+    const seconds = Math.floor(uptimeSeconds % 60);
 
-    const startTime = `${days}d ${hours}h ${minutes}m ${seconds}s`;
-
-    const serverUptime = getServerUptime();
+    const serverUptime = `${days}d ${hours}h ${minutes}m ${seconds}s`;
 
     const systemInfo = {
       platform: os.platform(),
@@ -38,27 +36,15 @@ module.exports.run = async ({ api, event }) => {
 
     function getDiskUsage(path) {
       try {
-        const { stdout } = execSync(`df -h ${path}`);
+        const stdout = execSync(`df -h ${path}`).toString();
         const lines = stdout.split('\n');
-        const stats = lines[1].split(/\s+/);
-        return `${stats[1]} used of ${stats[0]} (${stats[4]}%)`;
+        const stats = lines[1]?.split(/\s+/) || [];
+        if (stats.length >= 5) {
+          return `${stats[2]} used of ${stats[1]} (${stats[4]})`;
+        }
+        return "Unable to parse disk usage";
       } catch (error) {
         return "Unable to retrieve disk usage";
-      }
-    }
-
-    function getServerUptime() {
-      try {
-        const uptime = execSync("uptime -s").toString().trim();
-        const start = new Date(uptime);
-        const diff = Math.floor((Date.now() - start) / 1000);
-        const days = Math.floor(diff / (24 * 3600));
-        const hours = Math.floor((diff % (24 * 3600)) / 3600);
-        const minutes = Math.floor((diff % 3600) / 60);
-        const seconds = diff % 60;
-        return `${days}d ${hours}h ${minutes}m ${seconds}s`;
-      } catch (error) {
-        return "Unable to retrieve server uptime";
       }
     }
 

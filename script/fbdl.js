@@ -1,9 +1,11 @@
 const axios = require("axios");
+const fs = require("fs");
+const path = require("path");
 
 module.exports.config = {
   name: "fbdl",
-  version: "1.0.0",
-  description: "Fetches the Facebook video download link for manual download.",
+  version: "1.1.0",
+  description: "Fetches and sends a Facebook video as a file.",
   cooldown: 5,
 };
 
@@ -37,7 +39,7 @@ module.exports.run = async ({ api, event }) => {
 
     if (!data || data.msg !== "success") {
       return api.sendMessage(
-        `Failed to fetch the Facebook video details. Please check the link and try again.`,
+        "Failed to fetch the Facebook video details. Please check the link and try again.",
         event.threadID,
         event.messageID
       );
@@ -46,26 +48,48 @@ module.exports.run = async ({ api, event }) => {
     const videoUrl = data.hd || data.sd;
     if (!videoUrl) {
       return api.sendMessage(
-        `No downloadable video found for the provided link.`,
+        "No downloadable video found for the provided link.",
         event.threadID,
         event.messageID
       );
     }
 
-    // Construct the response message
-    const message = `
-⚙️ 𝗙𝗮𝗰𝗲𝗯𝗼𝗼𝗸 𝗩𝗶𝗱𝗲𝗼 𝗗𝗼𝘄𝗻𝗹𝗼𝗮𝗱 𝗟𝗶𝗻𝗸
+    // Download the video
+    const videoPath = path.join(__dirname, "video.mp4");
+    const response = await axios({
+      url: videoUrl,
+      method: "GET",
+      responseType: "stream",
+    });
 
-📝| 𝗧𝗶𝘁𝗹𝗲: ${data.title || "N/A"}
-👀| 𝗩𝗶𝗲𝘄𝘀: ${data.views || 0}
-👍| 𝗟𝗶𝗸𝗲𝘀: ${data.like || 0}
-🔗| 𝗦𝗵𝗮𝗿𝗲𝘀: ${data.shares || 0}
+    // Save the video to disk
+    const writer = fs.createWriteStream(videoPath);
+    response.data.pipe(writer);
 
-📥| 𝗗𝗼𝘄𝗻𝗹𝗼𝗮𝗱 𝗛𝗗: ${data.hd ? data.hd : "Not available"}
-📥| 𝗗𝗼𝘄𝗻𝗹𝗼𝗮𝗱 𝗦𝗗: ${data.sd ? data.sd : "Not available"}
-    `;
+    writer.on("finish", () => {
+      // Send the video file
+      api.sendMessage(
+        {
+          body: `🎥 Facebook Video\n\nTitle: ${data.title || "N/A"}\nViews: ${data.views || 0}\nLikes: ${data.like || 0}\nShares: ${data.shares || 0}`,
+          attachment: fs.createReadStream(videoPath),
+        },
+        event.threadID,
+        () => {
+          // Delete the video file after sending
+          fs.unlinkSync(videoPath);
+        },
+        event.messageID
+      );
+    });
 
-    return api.sendMessage(message, event.threadID, event.messageID);
+    writer.on("error", (err) => {
+      console.error(err);
+      api.sendMessage(
+        "An error occurred while downloading the video.",
+        event.threadID,
+        event.messageID
+      );
+    });
   } catch (error) {
     console.error(error);
     return api.sendMessage(

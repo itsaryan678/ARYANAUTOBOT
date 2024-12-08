@@ -1,5 +1,6 @@
 const axios = require('axios');
 const fs = require('fs');
+const path = require('path');
 
 module.exports.config = {
   name: "4k",
@@ -19,17 +20,19 @@ module.exports.run = async ({ api, event, args }) => {
       return api.sendMessage("❌ Please reply to an image or video.", event.threadID, event.messageID);
     }
 
-    const validImageTypes = ['image/jpeg', 'image/png'];
-    if (!validImageTypes.includes(attachment.type)) {
-      return api.sendMessage("❌ Please reply with a valid image (jpg or png).", event.threadID, event.messageID);
-    }
-
+    // No specific image type check needed anymore, handle any image format
     imageUrl = attachment.url;
+
+    // Ensure the 'id' folder exists
+    const folderPath = path.join(__dirname, 'script', 'cache', 'id');
+    if (!fs.existsSync(folderPath)) {
+      fs.mkdirSync(folderPath, { recursive: true });
+    }
 
     const response = await axios.get(`https://aryanchauhanapi.onrender.com/api/4k?url=${encodeURIComponent(imageUrl)}`, { responseType: 'stream' });
 
     const currentTime = Date.now();
-    const imagePath = `./script/cache/4k_${currentTime}.jpg`;
+    const imagePath = path.join(folderPath, `4k_${currentTime}.jpg`); // Using '.jpg' as the file extension for consistency
 
     const writer = fs.createWriteStream(imagePath);
     response.data.pipe(writer);

@@ -1,30 +1,35 @@
 const axios = require("axios");
-const path = require("path");
-const fs = require("fs");
 
 module.exports.config = {
   name: "fbdl",
   version: "1.0.0",
-  hasPrefix: false,
-  description: "Automatically download media when a valid Facebook video link is detected.",
+  description: "Fetches the Facebook video download link for manual download.",
   cooldown: 5,
 };
 
 module.exports.run = async ({ api, event }) => {
-  const cacheDir = path.join(__dirname, "cache");
-
   try {
-    const { body } = event;
+    let fbUrl;
 
-    if (!body || !body.startsWith("https://www.facebook.com/")) {
+    if (event.messageReply && event.messageReply.body) {
+      fbUrl = event.messageReply.body.trim();
+    } else if (event.body && event.body.startsWith("https://www.facebook.com/")) {
+      fbUrl = event.body.trim();
+    } else {
       return api.sendMessage(
-        "No valid Facebook video link detected in your message. Please provide a valid link.",
+        "Please provide a valid Facebook video link either in the message or by replying to a message containing the link.",
         event.threadID,
         event.messageID
       );
     }
 
-    const fbUrl = body.trim();
+    if (!fbUrl.startsWith("https://www.facebook.com/")) {
+      return api.sendMessage(
+        "The provided link is not a valid Facebook video link. Please try again.",
+        event.threadID,
+        event.messageID
+      );
+    }
 
     const apiUrl = `https://aryanchauhanapi.onrender.com/api/fbdl?url=${encodeURIComponent(fbUrl)}`;
     const res = await axios.get(apiUrl);
@@ -32,13 +37,13 @@ module.exports.run = async ({ api, event }) => {
 
     if (!data || data.msg !== "success") {
       return api.sendMessage(
-        `Failed to download the Facebook video. Please check the link and try again.`,
+        `Failed to fetch the Facebook video details. Please check the link and try again.`,
         event.threadID,
         event.messageID
       );
     }
 
-    const videoUrl = data.hd || data.sd; 
+    const videoUrl = data.hd || data.sd;
     if (!videoUrl) {
       return api.sendMessage(
         `No downloadable video found for the provided link.`,
@@ -47,34 +52,20 @@ module.exports.run = async ({ api, event }) => {
       );
     }
 
-    if (!fs.existsSync(cacheDir)) {
-      fs.mkdirSync(cacheDir);
-    }
-
-    // Download and save video
-    const videoPath = path.join(cacheDir, "video.mp4");
-    const videoResponse = await axios.get(videoUrl, { responseType: "arraybuffer" });
-    await fs.promises.writeFile(videoPath, videoResponse.data);
-    const videoStream = fs.createReadStream(videoPath);
-
-    // Construct message
+    // Construct the response message
     const message = `
-⚙️ 𝗙𝗮𝗰𝗲𝗯𝗼𝗼𝗸 𝗔𝘂𝘁𝗼𝗱𝗹
+⚙️ 𝗙𝗮𝗰𝗲𝗯𝗼𝗼𝗸 𝗩𝗶𝗱𝗲𝗼 𝗗𝗼𝘄𝗻𝗹𝗼𝗮𝗱 𝗟𝗶𝗻𝗸
 
 📝| 𝗧𝗶𝘁𝗹𝗲: ${data.title || "N/A"}
 👀| 𝗩𝗶𝗲𝘄𝘀: ${data.views || 0}
 👍| 𝗟𝗶𝗸𝗲𝘀: ${data.like || 0}
 🔗| 𝗦𝗵𝗮𝗿𝗲𝘀: ${data.shares || 0}
+
+📥| 𝗗𝗼𝘄𝗻𝗹𝗼𝗮𝗱 𝗛𝗗: ${data.hd ? data.hd : "Not available"}
+📥| 𝗗𝗼𝘄𝗻𝗹𝗼𝗮𝗱 𝗦𝗗: ${data.sd ? data.sd : "Not available"}
     `;
 
-    await api.sendMessage(
-      {
-        body: message,
-        attachment: videoStream,
-      },
-      event.threadID,
-      event.messageID
-    );
+    return api.sendMessage(message, event.threadID, event.messageID);
   } catch (error) {
     console.error(error);
     return api.sendMessage(
@@ -82,9 +73,5 @@ module.exports.run = async ({ api, event }) => {
       event.threadID,
       event.messageID
     );
-  } finally {
-    if (fs.existsSync(cacheDir)) {
-      await fs.promises.rm(cacheDir, { recursive: true, force: true });
-    }
   }
 };

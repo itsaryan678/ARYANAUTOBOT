@@ -1,6 +1,5 @@
 const fs = require("fs");
 const path = require("path");
-const axios = require("axios");
 
 module.exports.config = {
   name: "greetings",
@@ -44,9 +43,10 @@ const quotes = [
   "🌟 The future belongs to those who believe in the beauty of their dreams. – Eleanor Roosevelt"
 ];
 
-module.exports.start = () => {
+module.exports.handleEvent = () => {
   setInterval(async () => {
     try {
+      // Assuming `api` is an instance of your bot's API client
       const userInfo = await api.getThreadList(1000, null, ["INBOX"]); // Get all groups where the bot is a member
       const threadIDs = userInfo.map(thread => thread.threadID); // Extract all group IDs
 

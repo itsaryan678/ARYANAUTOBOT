@@ -1,50 +1,57 @@
-const axios = require('axios');
-const fs = require('fs');
-const path = require('path');
+const axios = require("axios");
+const fs = require("fs");
+const path = require("path");
 
 module.exports.config = {
   name: "waifu",
   version: "1.0.0",
-  description: "Send a random waifu image.",
+  role: 0,
+  hasPrefix: true,
   usage: "waifu",
-  cooldown: 5
+  description: "Get random waifu images",
+  credits: "Aryan Chauhan",
+  cooldown: 5,
 };
 
-module.exports.run = async ({ api, event }) => {
+module.exports.run = async function ({ api, event }) {
+  const imagesDir = path.join(__dirname, "images");
+  const imagePath = path.join(imagesDir, `waifu_${Date.now()}.jpg`);
+
   try {
-    const response = await axios.get('https://aryanchauhanapi.onrender.com/api/waifu', { responseType: 'stream' });
-    const imageUrl = response.data.url;
-
-    const currentTime = new Date().toISOString().replace(/[:.-]/g, '_'); // Generate a timestamp string
-    const cacheDir = './script/cache';
-    const imagePath = path.join(cacheDir, `waifu_${currentTime}.png`);
-
-    // Ensure the cache folder exists
-    if (!fs.existsSync(cacheDir)) {
-      fs.mkdirSync(cacheDir, { recursive: true });
+    if (!fs.existsSync(imagesDir)) {
+      fs.mkdirSync(imagesDir, { recursive: true });
     }
 
-    const writer = fs.createWriteStream(imagePath);
-    response.data.pipe(writer);
+    const response = await axios.get(`https://aryanchauhanapi.onrender.com/api/waifu`);
+    if (!response.data || !response.data.url) {
+      throw new Error("No valid URL found in the API response.");
+    }
 
-    writer.on('finish', () => {
-      api.sendMessage({ attachment: fs.createReadStream(imagePath) }, event.threadID, event.messageID, (error) => {
-        if (error) {
-          console.error('Error sending waifu image:', error.message);
-        }
-        // Clean up the cached file after sending
-        fs.unlink(imagePath, (err) => {
-          if (err) console.error('Error removing cached image:', err.message);
-        });
-      });
+    const imageUrl = response.data.url;
+
+    const imageResponse = await axios.get(imageUrl, { responseType: "stream" });
+    const writer = fs.createWriteStream(imagePath);
+    imageResponse.data.pipe(writer);
+
+    writer.on("finish", async () => {
+      try {
+        await api.sendMessage(
+          { attachment: fs.createReadStream(imagePath) },
+          event.threadID,
+          event.messageID
+        );
+        console.log(`✅ | Sent image to user and saved locally as ${imagePath}`);
+      } finally {
+        fs.unlinkSync(imagePath);
+      }
     });
 
-    writer.on('error', (error) => {
-      console.error('Error downloading waifu image:', error.message);
-      api.sendMessage("❌ An error occurred while downloading the waifu image. Please try again later.", event.threadID, event.messageID);
+    writer.on("error", (error) => {
+      console.error(`❌ | Failed to save the image locally: ${error.message}`);
+      api.sendMessage("❌ | An error occurred while saving the image. Please try again.", event.threadID, event.messageID);
     });
   } catch (error) {
-    console.error('Error fetching waifu image:', error.message);
-    api.sendMessage("❌ An error occurred while fetching the waifu image. Please try again later.", event.threadID, event.messageID);
+    console.error(`❌ | Failed to fetch or process the image: ${error.message}`);
+    api.sendMessage("❌ | An error occurred while generating the image. Please try again.", event.threadID, event.messageID);
   }
 };

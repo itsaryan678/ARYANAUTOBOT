@@ -65,16 +65,16 @@ module.exports.run = async ({ api, event }) => {
     const message = `
 📚 𝗨𝗽𝘁𝗶𝗺𝗲 𝗜𝗻𝗳𝗼𝗿𝗺𝗮𝘁𝗶𝗼𝗻𝘀 
 
-⏰| 𝗦𝗲𝗿𝘃𝗲𝗿 𝗨𝗽𝘁𝗶𝗺𝗲${serverUptime}
-🌐| 𝗣𝗹𝗮𝘁𝗳𝗼𝗿𝗺 ${systemInfo.platform}
-⚙️| 𝗔𝗿𝗰𝗵𝗶𝘁𝗲𝗰𝘁𝘂𝗿𝗲 ${systemInfo.architecture}
-🌐| 𝗢𝗦 𝗩𝗲𝗿𝘀𝗶𝗼𝗻 ${systemInfo.osVersion}
-🔎| 𝗛𝗼𝘀𝘁𝗻𝗮𝗺𝗲 ${systemInfo.hostname}
+⏰| 𝗦𝗲𝗿𝘃𝗲𝗿 𝗨𝗽𝘁𝗶𝗺𝗲: ${serverUptime}
+🌐| 𝗣𝗹𝗮𝘁𝗳𝗼𝗿𝗺: ${systemInfo.platform}
+⚙️| 𝗔𝗿𝗰𝗵𝗶𝘁𝗲𝗰𝘁𝘂𝗿𝗲: ${systemInfo.architecture}
+🌐| 𝗢𝗦 𝗩𝗲𝗿𝘀𝗶𝗼𝗻: ${systemInfo.osVersion}
+🔎| 𝗛𝗼𝘀𝘁𝗻𝗮𝗺𝗲: ${systemInfo.hostname}
 📂| 𝗧𝗼𝘁𝗮𝗹 𝗠𝗲𝗺𝗼𝗿𝘆: ${systemInfo.totalMemory}
-🆓| 𝗙𝗿𝗲𝗲 𝗠𝗲𝗺𝗼𝗿𝘆 ${systemInfo.freeMemory}
-🖥️| 𝗖𝗣𝗨𝘀 ${systemInfo.cpus}
-📀| 𝗖𝗣𝗨 𝗠𝗼𝗱𝗲𝗹 ${systemInfo.cpuModel}
-🔄| 𝗟𝗼𝗮𝗱 𝗔𝘃𝗴 ${systemInfo.loadAverage}
+🆓| 𝗙𝗿𝗲𝗲 𝗠𝗲𝗺𝗼𝗿𝘆: ${systemInfo.freeMemory}
+🖥️| 𝗖𝗣𝗨𝘀: ${systemInfo.cpus}
+📀| 𝗖𝗣𝗨 𝗠𝗼𝗱𝗲𝗹: ${systemInfo.cpuModel}
+🔄| 𝗟𝗼𝗮𝗱 𝗔𝘃𝗴: ${systemInfo.loadAverage}
 📂| 𝗗𝗶𝘀𝗸 𝗨𝘀𝗮𝗴𝗲: ${systemInfo.diskUsage}
 📶| 𝗡𝗲𝘁𝘄𝗼𝗿𝗸 𝗜𝗻𝗳: ${Object.keys(systemInfo.networkInterfaces).join(', ')}`;
 

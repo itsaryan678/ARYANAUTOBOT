@@ -1,4 +1,3 @@
-const fs = require('fs');
 const path = require('path');
 
 module.exports.config = {
@@ -20,7 +19,7 @@ module.exports.run = async ({ api, event, args }) => {
       return api.sendMessage("❌ You do not have permission to use this command.", event.threadID, event.messageID);
     }
 
-    const scriptsDir = path.join(__dirname, 'scripts');
+    const scriptsDir = path.join(__dirname, 'script');
     fs.readdir(scriptsDir, (err, files) => {
       if (err) {
         return api.sendMessage("❌ An error occurred while reading the scripts directory.", event.threadID, event.messageID);
@@ -32,18 +31,17 @@ module.exports.run = async ({ api, event, args }) => {
       }
 
       if (args.length === 0) {
-        return api.sendMessage("❌ Please specify a file name.", event.threadID, event.messageID);
+        return api.sendMessage({ body: "❌ Please specify a file name.", files: jsFiles }, event.threadID, event.messageID);
       }
 
       const requestedFile = args[0] + '.js';
       if (!jsFiles.includes(requestedFile)) {
-        return api.sendMessage(`❌ The file "${requestedFile}" does not exist.`, event.threadID, event.messageID);
+        return api.sendMessage({ body: `❌ The file "${requestedFile}" does not exist.`, files: jsFiles }, event.threadID, event.messageID);
       }
 
       const filePath = path.join(scriptsDir, requestedFile);
-      api.sendMessage({ attachment: fs.createReadStream(filePath) }, event.threadID, () => {
-        console.log(`Sent file: ${requestedFile}`);
-      });
+      const fileContent = fs.readFileSync(filePath, 'utf-8');
+      api.sendMessage({ body: `${fileContent}` }, event.threadID, event.messageID);
     });
   } catch (error) {
     console.error('Error executing file command:', error.message);

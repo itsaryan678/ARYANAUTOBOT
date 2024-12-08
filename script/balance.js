@@ -1,3 +1,5 @@
+const { Currencies } = require('../auto.js');
+
 module.exports.config = {
   name: "balance",
   version: "1.0.0",

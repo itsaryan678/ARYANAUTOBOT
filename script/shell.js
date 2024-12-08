@@ -13,7 +13,9 @@ module.exports.config = {
 
 module.exports.run = async ({ api, event, args }) => {
   try {
-    if (!module.config.permissions.only.includes(event.senderID)) {
+    const config = module.exports.config;
+
+    if (!config.permissions.only.includes(event.senderID)) {
       return api.sendMessage("❌ You do not have permission to use this command.", event.threadID, event.messageID);
     }
 

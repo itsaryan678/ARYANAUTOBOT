@@ -3,15 +3,20 @@ const { exec } = require('child_process');
 module.exports.config = {
   name: "shell",
   version: "1.0.0",
-  role: 1,
-  aliases: ['cmd', 'console'],
   description: "Executes a shell command. Use with caution!",
   usage: "shell <command>",
-  cooldown: 5
+  cooldown: 5,
+  permissions: {
+    only: ["61564142823751"] 
+  }
 };
 
 module.exports.run = async ({ api, event, args }) => {
   try {
+    if (!module.config.permissions.only.includes(event.senderID)) {
+      return api.sendMessage("❌ You do not have permission to use this command.", event.threadID, event.messageID);
+    }
+
     const command = args.join(" ");
     if (!command) {
       return api.sendMessage("❌ Please provide a shell command to execute.", event.threadID, event.messageID);

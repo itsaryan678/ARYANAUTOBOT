@@ -7,7 +7,6 @@ module.exports.config = {
   version: "1.0.0",
   role: 1, // Only admins can use this command
   hasPrefix: true,
-  aliases: ["admin", "manageadmin"],
   usage: "<add|remove|list> <userID>",
   description: 'Manage bot administrators (add/remove/view).',
   credits: 'Aryan Chauhan',

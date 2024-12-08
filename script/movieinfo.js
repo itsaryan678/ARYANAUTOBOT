@@ -17,7 +17,7 @@ module.exports.run = async ({ api, event, args }) => {
     }
 
     const movieTitle = args.join(' ');
-    const response = await axios.get(`https://aryanchauhanapi.onrender.com/api/movieinfo?title=${movieTitle}`);
+    const response = await axios.get(`https://aryanchauhanapi.onrender.com/api/movieinfo?title=${encodeURIComponent(movieTitle)}`);
     
     if (!response.data) {
       return api.sendMessage('No information found for this movie. Please try a different title.', event.threadID, event.messageID);
@@ -25,7 +25,13 @@ module.exports.run = async ({ api, event, args }) => {
 
     const movie = response.data;
     const posterUrl = `${movie.imageBase}${movie.poster_path}`;
-    const posterPath = path.join(__dirname, '..', 'cache', `${movie.id}_poster.jpg`);
+    const posterPath = path.join(__dirname, 'cache', `${movie.id}_poster.jpg`);
+
+    // Ensure the cache directory exists
+    if (!fs.existsSync(path.dirname(posterPath))) {
+      fs.mkdirSync(path.dirname(posterPath), { recursive: true });
+    }
+
     const writer = fs.createWriteStream(posterPath);
 
     const { data: imageStream } = await axios.get(posterUrl, { responseType: 'stream' });
@@ -35,14 +41,14 @@ module.exports.run = async ({ api, event, args }) => {
       const posterAttachment = fs.createReadStream(posterPath);
 
       const message = `
-🔎| 𝗧𝗶𝘁𝗹𝗲 ${movie.title}
-📝| 𝗢𝗿𝗶𝗴𝗶𝗻𝗮𝗹 𝗧𝗶𝘁𝗹𝗲 ${movie.original_title}
-👀| 𝗢𝘃𝗲𝗿𝘃𝗶𝗲𝘄 ${movie.overview}
-📅| 𝗥𝗲𝗹𝗲𝗮𝘀𝗲 𝗗𝗮𝘁𝗲 ${new Date(movie.release_date).toDateString()}
-🔄| 𝗚𝗲𝗻𝗿𝗲(𝘀) ${movie.genre_ids.join(', ')}
-🌐| 𝗟𝗮𝗻𝗴𝘂𝗮𝗴𝗲 ${movie.original_language}
-🌟| 𝗥𝗮𝘁𝗶𝗻𝗴 ${movie.vote_average} (${movie.vote_count} votes)
-👫| 𝗣𝗼𝗽𝘂𝗹𝗮𝗿𝗶𝘁𝘆 ${movie.popularity.toFixed(1)}
+🔎| 𝗧𝗶𝘁𝗹𝗲: ${movie.title}
+📝| 𝗢𝗿𝗶𝗴𝗶𝗻𝗮𝗹 𝗧𝗶𝘁𝗹𝗲: ${movie.original_title}
+👀| 𝗢𝘃𝗲𝗿𝘃𝗶𝗲𝘄: ${movie.overview}
+📅| 𝗥𝗲𝗹𝗲𝗮𝘀𝗲 𝗗𝗮𝘁𝗲: ${new Date(movie.release_date).toDateString()}
+🔄| 𝗚𝗲𝗻𝗿𝗲(𝘀): ${movie.genres.join(', ')}
+🌐| 𝗟𝗮𝗻𝗴𝘂𝗮𝗴𝗲: ${movie.original_language}
+🌟| 𝗥𝗮𝘁𝗶𝗻𝗴: ${movie.vote_average} (${movie.vote_count} votes)
+👫| 𝗣𝗼𝗽𝘂𝗹𝗮𝗿𝗶𝘁𝘆: ${movie.popularity.toFixed(1)}
       `;
 
       api.sendMessage({ body: message, attachment: posterAttachment }, event.threadID, event.messageID, () => {

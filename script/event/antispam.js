@@ -32,8 +32,9 @@ module.exports.handleEvent = async ({ event, api, Users }) => {
     if (global.messageCounts[senderID].count >= spamLimit) {
       try {
         await api.removeUserFromGroup(senderID, event.threadID);
+        const userName = Users ? Users.getName(senderID) : "A member";
         api.sendMessage(
-          `🚫 ${Users.getName(senderID)} was kicked for spamming. Please avoid spamming the group!`,
+          `🚫 ${userName} was kicked for spamming. Please avoid spamming the group!`,
           event.threadID
         );
       } catch (error) {

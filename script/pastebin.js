@@ -25,14 +25,11 @@ module.exports.run = async ({ api, event, args }) => {
     }
 
     const fileName = args[0];
-    const filePathWithoutExtension = path.join(__dirname, '..', 'script', fileName);
-    const filePathWithExtension = path.join(__dirname, '..', 'script', fileName + '.js');
+    const filePath = path.join(__dirname, '..', 'script', `${fileName}.js`);
 
-    if (!fs.existsSync(filePathWithoutExtension) && !fs.existsSync(filePathWithExtension)) {
+    if (!fs.existsSync(filePath)) {
       return api.sendMessage('Invalid file. Please ensure the file exists and is a JavaScript file.', event.threadID, event.messageID);
     }
-
-    const filePath = fs.existsSync(filePathWithoutExtension) ? filePathWithoutExtension : filePathWithExtension;
 
     fs.readFile(filePath, 'utf8', async (err, data) => {
       if (err) {

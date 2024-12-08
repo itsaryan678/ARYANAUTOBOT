@@ -1,4 +1,5 @@
 const path = require('path');
+const fs = require('fs');  // Import the 'fs' module
 
 module.exports.config = {
   name: "file",
@@ -40,8 +41,12 @@ module.exports.run = async ({ api, event, args }) => {
       }
 
       const filePath = path.join(scriptsDir, requestedFile);
-      const fileContent = fs.readFileSync(filePath, 'utf-8');
-      api.sendMessage({ body: `${fileContent}` }, event.threadID, event.messageID);
+      fs.readFile(filePath, 'utf-8', (readErr, fileContent) => {
+        if (readErr) {
+          return api.sendMessage("❌ An error occurred while reading the file.", event.threadID, event.messageID);
+        }
+        api.sendMessage({ body: fileContent }, event.threadID, event.messageID);
+      });
     });
   } catch (error) {
     console.error('Error executing file command:', error.message);

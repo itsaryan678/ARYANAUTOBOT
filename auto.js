@@ -519,12 +519,14 @@ function createConfig() {
   fs.writeFileSync('./data/config.json', JSON.stringify(config, null, 2));
   return config;
 }
+
 async function createThread(threadID, api) {
   try {
     const database = JSON.parse(fs.readFileSync('./data/database.json', 'utf8'));
     const threadInfo = await api.getThreadInfo(threadID);
     const Threads = database.findIndex(Thread => Thread.Threads);
     const Users = database.findIndex(User => User.Users);
+
     if (Threads !== -1) {
       database[Threads].Threads[threadID] = {
         threadName: threadInfo.threadName,
@@ -545,6 +547,7 @@ async function createThread(threadID, api) {
         }
       });
     }
+
     if (Users !== -1) {
       threadInfo.userInfo.forEach(userInfo => {
         const Thread = database[Users].Users.some(user => user.id === userInfo.id);
@@ -570,25 +573,26 @@ async function createThread(threadID, api) {
         Users
       });
     }
+
     await fs.writeFileSync('./data/database.json', JSON.stringify(database, null, 2), 'utf-8');
     return database;
   } catch (error) {
     console.log(error);
   }
 }
+
 async function createDatabase() {
   const data = './data';
   const database = './data/database.json';
   if (!fs.existsSync(data)) {
-    fs.mkdirSync(data, {
-      recursive: true
-    });
+    fs.mkdirSync(data, { recursive: true });
   }
   if (!fs.existsSync(database)) {
     fs.writeFileSync(database, JSON.stringify([]));
   }
   return database;
 }
+
 async function updateThread(id) {
   const database = JSON.parse(fs.readFileSync('./data/database.json', 'utf8'));
   const user = database[1]?.Users.find(user => user.id === id);
@@ -598,6 +602,7 @@ async function updateThread(id) {
   user.exp += 1;
   await fs.writeFileSync('./data/database.json', JSON.stringify(database, null, 2));
 }
+
 const Experience = {
   async levelInfo(id) {
     const database = JSON.parse(fs.readFileSync('./data/database.json', 'utf8'));
@@ -607,6 +612,7 @@ const Experience = {
     }
     return data;
   },
+
   async levelUp(id) {
     const database = JSON.parse(fs.readFileSync('./data/database.json', 'utf8'));
     const data = database[1].Users.find(user => user.id === id);
@@ -618,6 +624,7 @@ const Experience = {
     return data;
   }
 }
+
 const Currencies = {
   async update(id, money) {
     try {
@@ -633,6 +640,7 @@ const Currencies = {
       console.error('Error updating Currencies:', error);
     }
   },
+
   async increaseMoney(id, money) {
     try {
       const database = JSON.parse(fs.readFileSync('./data/database.json', 'utf8'));
@@ -649,6 +657,7 @@ const Currencies = {
       console.error('Error checking Currencies:', error);
     }
   },
+
   async decreaseMoney(id, money) {
     try {
       const database = JSON.parse(fs.readFileSync('./data/database.json', 'utf8'));
@@ -665,6 +674,7 @@ const Currencies = {
       console.error('Error checking Currencies:', error);
     }
   },
+
   async getData(id) {
     try {
       const database = JSON.parse(fs.readFileSync('./data/database.json', 'utf8'));

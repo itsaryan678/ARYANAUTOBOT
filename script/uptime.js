@@ -1,5 +1,9 @@
-const os = require('os');
-const { execSync } = require('child_process');
+const os = require("os");
+const fs = require("fs-extra");
+const path = require("path");
+const axios = require("axios");
+
+const startTime = new Date(); 
 
 module.exports.config = {
   name: "uptime",
@@ -12,61 +16,80 @@ module.exports.config = {
 
 module.exports.run = async ({ api, event }) => {
   try {
-    const uptimeSeconds = os.uptime();
-    const days = Math.floor(uptimeSeconds / (24 * 3600));
-    const hours = Math.floor((uptimeSeconds % (24 * 3600)) / 3600);
-    const minutes = Math.floor((uptimeSeconds % 3600) / 60);
-    const seconds = Math.floor(uptimeSeconds % 60);
+    const uptimeInSeconds = (new Date() - startTime) / 1000;
 
-    const serverUptime = `${days}d ${hours}h ${minutes}m ${seconds}s`;
+    const seconds = uptimeInSeconds;
+    const days = Math.floor(seconds / (3600 * 24));
+    const hours = Math.floor((seconds % (3600 * 24)) / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    const secondsLeft = Math.floor(seconds % 60);
+    const uptimeFormatted = `${days}d ${hours}h ${minutes}m ${secondsLeft}s`;
 
-    const systemInfo = {
-      platform: os.platform(),
-      architecture: os.arch(),
-      osVersion: os.release(),
-      hostname: os.hostname(),
-      totalMemory: (os.totalmem() / 1024 / 1024 / 1024).toFixed(2) + " GB",
-      freeMemory: (os.freemem() / 1024 / 1024 / 1024).toFixed(2) + " GB",
-      cpus: os.cpus().length,
-      cpuModel: os.cpus()[0].model,
-      loadAverage: os.loadavg().map(avg => avg.toFixed(2)).join(', '),
-      diskUsage: getDiskUsage('/'),
-      networkInterfaces: os.networkInterfaces()
-    };
+    const loadAverage = os.loadavg();
+    const cpuUsage =
+      os
+        .cpus()
+        .map((cpu) => cpu.times.user)
+        .reduce((acc, curr) => acc + curr) / os.cpus().length;
 
-    function getDiskUsage(path) {
-      try {
-        const stdout = execSync(`df -h ${path}`).toString();
-        const lines = stdout.split('\n');
-        const stats = lines[1]?.split(/\s+/) || [];
-        if (stats.length >= 5) {
-          return `${stats[2]} used of ${stats[1]} (${stats[4]})`;
-        }
-        return "Unable to parse disk usage";
-      } catch (error) {
-        return "Unable to retrieve disk usage";
-      }
+    const totalMemoryGB = os.totalmem() / 1024 ** 3;
+    const freeMemoryGB = os.freemem() / 1024 ** 3;
+    const usedMemoryGB = totalMemoryGB - freeMemoryGB;
+
+    const currentDate = new Date();
+    const options = { year: "numeric", month: "numeric", day: "numeric" };
+    const date = currentDate.toLocaleDateString("en-US", options);
+    const time = currentDate.toLocaleTimeString("en-US", {
+      timeZone: "Asia/Kolkata",
+      hour12: true,
+    });
+
+    const timeStart = Date.now();
+    await api.sendMessage({
+      body: "🔎 Processing your request...",
+    }, event.threadID);
+
+    const ping = Date.now() - timeStart;
+
+    let pingStatus = "⛔| 𝖡𝖺𝖽 𝖲𝗒𝗌𝗍𝖾𝗆";
+    if (ping < 1000) {
+      pingStatus = "✅| 𝖲𝗆𝗈𝗈𝗍𝗁 𝖲𝗒𝗌𝗍𝖾𝗆";
     }
+    
+    const systemInfo = `♡   ∩_∩
+     （„• ֊ •„)♡
+    ╭─∪∪────────────⟡
+    │ 𝗨𝗽𝘁𝗶𝗺𝗲 𝗜𝗻𝗳𝗼
+    ├───────────────⟡
+    ├───────────────⟡
+    │ ⏰ 𝗥𝚞𝚗𝚝𝚒𝚖𝗲
+    │  ${uptimeFormatted}
+    ├───────────────⟡
+    │ 👑 𝗦𝘆𝘀𝘁𝗲𝗺 𝗜𝗻𝗳𝗼
+    │𝙾𝚂: ${os.type()} ${os.arch()}
+    │𝙻𝙰𝙽𝙶 𝚅𝙴𝚁: ${process.version}
+    │𝙲𝙿𝚄 𝙼𝙾𝙳𝙴𝙻: ${os.cpus()[0].model}
+    │𝚂𝚃𝙾𝚁𝙰𝙶𝙴: ${usedMemoryGB.toFixed(2)} GB / ${totalMemoryGB.toFixed(2)} GB
+    │𝙲𝙿𝚄 𝚄𝚂𝙰𝙶𝙴: ${cpuUsage.toFixed(1)}%
+    │𝚁𝙰𝙼 𝚄𝚂𝙶𝙴: ${process.memoryUsage().heapUsed / 1024 / 1024} MB;
+    ├───────────────⟡
+    │ ✅ 𝗢𝘁𝗵𝗲𝗿 𝗜𝗻𝗳𝗼
+    │𝙳𝙰𝚃𝙴: ${date}
+    │𝚃𝙸𝙼𝙴: ${time}
+    │𝙿𝙸𝙽𝙶: ${ping}𝚖𝚜
+    │𝚂𝚃𝙰𝚃𝚄𝚂: ${pingStatus}
+    ╰───────────────⟡
+    `;
 
-    const message = `
-📚 𝗨𝗽𝘁𝗶𝗺𝗲 𝗜𝗻𝗳𝗼𝗿𝗺𝗮𝘁𝗶𝗼𝗻𝘀 
-
-⏰| 𝗦𝗲𝗿𝘃𝗲𝗿 𝗨𝗽𝘁𝗶𝗺𝗲: ${serverUptime}
-🌐| 𝗣𝗹𝗮𝘁𝗳𝗼𝗿𝗺: ${systemInfo.platform}
-⚙️| 𝗔𝗿𝗰𝗵𝗶𝘁𝗲𝗰𝘁𝘂𝗿𝗲: ${systemInfo.architecture}
-🌐| 𝗢𝗦 𝗩𝗲𝗿𝘀𝗶𝗼𝗻: ${systemInfo.osVersion}
-🔎| 𝗛𝗼𝘀𝘁𝗻𝗮𝗺𝗲: ${systemInfo.hostname}
-📂| 𝗧𝗼𝘁𝗮𝗹 𝗠𝗲𝗺𝗼𝗿𝘆: ${systemInfo.totalMemory}
-🆓| 𝗙𝗿𝗲𝗲 𝗠𝗲𝗺𝗼𝗿𝘆: ${systemInfo.freeMemory}
-🖥️| 𝗖𝗣𝗨𝘀: ${systemInfo.cpus}
-📀| 𝗖𝗣𝗨 𝗠𝗼𝗱𝗲𝗹: ${systemInfo.cpuModel}
-🔄| 𝗟𝗼𝗮𝗱 𝗔𝘃𝗴: ${systemInfo.loadAverage}
-📂| 𝗗𝗶𝘀𝗸 𝗨𝘀𝗮𝗴𝗲: ${systemInfo.diskUsage}
-📶| 𝗡𝗲𝘁𝘄𝗼𝗿𝗸 𝗜𝗻𝗳: ${Object.keys(systemInfo.networkInterfaces).join(', ')}`;
-
-    return api.sendMessage(message, event.threadID, event.messageID);
+    await api.sendMessage({
+      body: systemInfo,
+    }, event.threadID);
   } catch (error) {
-    console.error('Error executing uptime command:', error.message);
-    return api.sendMessage("❌ An error occurred while fetching server details. Please try again later.", event.threadID, event.messageID);
+    console.error("Error retrieving system information:", error);
+    api.sendMessage(
+      "Unable to retrieve system information.",
+      event.threadID,
+      event.messageID,
+    );
   }
 };

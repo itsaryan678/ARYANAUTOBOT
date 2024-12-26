@@ -23,7 +23,7 @@ module.exports.run = async function({
     if (!prompt) {
       await api.sendMessage(`Please provide a prompt for the image generation. Example: animagen cute girl`, event.threadID, event.messageID);
     } else {
-      const response = await axios.get(`https://aryanchauhanapi.onrender.com/api/animagen?prompt=${encodeURIComponent(prompt)}`, { responseType: 'stream' });
+      const response = await axios.get(`https://aryanchauhanapi.onrender.com/api/animagen31?prompt=${encodeURIComponent(prompt)}`, { responseType: 'stream' });
 
       if (response.data) {
         const imagesDir = path.join(__dirname, 'images');

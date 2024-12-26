@@ -23,7 +23,7 @@ module.exports.run = async function({
     if (!prompt) {
       await api.sendMessage(`Please provide a prompt for the image generation.\nExample: flux cat`, event.threadID, event.messageID);
     } else {
-      const response = await axios.get(`https://aryanchauhanapi.onrender.com/api/fluxdev?prompt=${encodeURIComponent(prompt)}`, { responseType: 'stream' });
+      const response = await axios.get(`https://aryanchauhanapi.onrender.com/fluxpro?prompt=${encodeURIComponent(prompt)}&ar=1:1`, { responseType: 'stream' });
 
       if (response.data) {
         const imagesDir = path.join(__dirname, 'images');

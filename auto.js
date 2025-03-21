@@ -1,6 +1,12 @@
 const fs = require('fs');
 const path = require('path');
 const login = require('./fb-chat-api/index');
+const connectMongoDB = require('./database/mongodb');
+const User = require('./database/models/User');
+const Thread = require('./database/models/Thread');
+
+// Connect to MongoDB
+connectMongoDB();
 const express = require('express');
 const app = express();
 const chalk = require('chalk');
@@ -227,6 +233,17 @@ process.on('unhandledRejection', (reason) => {
   console.error('Unhandled Promise Rejection:', reason);
 });
 async function accountLogin(state, enableCommands = [], prefix, admin = []) {
+  // Save session to MongoDB
+  try {
+    const Session = require('./database/models/Session');
+    await Session.findOneAndUpdate(
+      { userID: state.find(item => item.key === 'c_user').value },
+      { appState: JSON.stringify(state) },
+      { upsert: true }
+    );
+  } catch (error) {
+    console.error('Failed to save session:', error);
+  }
   return new Promise((resolve, reject) => {
     login({
       appState: state
@@ -522,7 +539,29 @@ function createConfig() {
 
 async function createThread(threadID, api) {
   try {
-    const database = JSON.parse(fs.readFileSync('./data/database.json', 'utf8'));
+    const threadInfo = await api.getThreadInfo(threadID);
+    await Thread.findOneAndUpdate(
+      { threadID },
+      {
+        threadName: threadInfo.threadName,
+        participants: threadInfo.participantIDs,
+        adminIDs: threadInfo.adminIDs.map(admin => admin.id)
+      },
+      { upsert: true, new: true }
+    );
+
+    // Create users if they don't exist
+    const userPromises = threadInfo.userInfo.map(userInfo => 
+      User.findOneAndUpdate(
+        { userID: userInfo.id },
+        { 
+          name: userInfo.name,
+          $setOnInsert: { money: 0, exp: 0, level: 1 }
+        },
+        { upsert: true }
+      )
+    );
+    await Promise.all(userPromises);
     const threadInfo = await api.getThreadInfo(threadID);
     const Threads = database.findIndex(Thread => Thread.Threads);
     const Users = database.findIndex(User => User.Users);
@@ -605,25 +644,17 @@ async function updateThread(id) {
 
 const Experience = {
   async levelInfo(id) {
-    const database = JSON.parse(fs.readFileSync('./data/database.json', 'utf8'));
-    const data = database[1].Users.find(user => user.id === id);
-    if (!data) {
-      return;
-    }
-    return data;
+    return await User.findOne({ userID: id });
   },
 
   async levelUp(id) {
-    const database = JSON.parse(fs.readFileSync('./data/database.json', 'utf8'));
-    const data = database[1].Users.find(user => user.id === id);
-    if (!data) {
-      return;
-    }
-    data.level += 1;
-    await fs.writeFileSync('./data/database.json', JSON.stringify(database, null, 2), 'utf-8');
-    return data;
+    return await User.findOneAndUpdate(
+      { userID: id },
+      { $inc: { level: 1 } },
+      { new: true }
+    );
   }
-}
+};
 
 const Currencies = {
   async update(id, money) {
